@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchStnkList, fetchStnkListByCorrection , editStnk} from "@/slices/stnkSlice";
+import { fetchStnkList, fetchStnkListByCorrection, fetchStnkListByDate, editStnk} from "@/slices/stnkSlice";
 import {
   Card,
   CardContent,
@@ -28,7 +28,12 @@ import {
   Alert,
   Divider,
   Tabs,
-  Tab
+  Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Collapse
 } from "@mui/material";
 
 const STNKDataTable = () => {
@@ -53,6 +58,16 @@ const STNKDataTable = () => {
   
   // State for saving correction
   const [savingCorrection, setSavingCorrection] = useState(false);
+
+  // State for date filter
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState({
+    selectedDate: '',
+    filterType: 'all' // 'all', 'today', 'yesterday', 'custom'
+  });
+  const [filteredData, setFilteredData] = useState([]);
+  const [filteredCorrectionData, setFilteredCorrectionData] = useState([]);
+  const [dateFilterLoading, setDateFilterLoading] = useState(false);
  
   useEffect(() => {
     dispatch(fetchStnkList());
@@ -76,6 +91,120 @@ const STNKDataTable = () => {
         });
     }
   }, [activeTab, dispatch, correctionData.length]);
+
+  // Filter data based on date when data or filter changes
+  useEffect(() => {
+    if (dateFilter.filterType === 'all') {
+      setFilteredData(stnkData);
+      setFilteredCorrectionData(correctionData);
+    } else {
+      applyDateFilter();
+    }
+  }, [stnkData, correctionData, dateFilter]);
+
+  const applyDateFilter = async () => {
+    if (dateFilter.filterType === 'all') {
+      setFilteredData(stnkData);
+      setFilteredCorrectionData(correctionData);
+      return;
+    }
+
+    let targetDate = '';
+    const now = new Date();
+
+    // Set target date based on filter type
+    switch (dateFilter.filterType) {
+      case 'today':
+        targetDate = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        break;
+      case 'yesterday':
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        targetDate = yesterday.toISOString().split('T')[0];
+        break;
+      case 'custom':
+        targetDate = dateFilter.selectedDate;
+        break;
+      default:
+        return;
+    }
+
+    if (!targetDate) return;
+
+    try {
+      setDateFilterLoading(true);
+      
+      // Fetch data from API endpoint
+      const response = await dispatch(fetchStnkListByDate(targetDate)).unwrap();
+      
+      // Set filtered data for regular tab
+      setFilteredData(response.data || []);
+      
+      // For correction data, we'll filter locally since we don't have separate endpoint
+      // You can create a similar endpoint for correction data if needed
+      const filteredCorrections = correctionData.filter(item => {
+        if (!item.created_at) return false;
+        const itemDate = new Date(item.created_at).toISOString().split('T')[0];
+        return itemDate === targetDate;
+      });
+      setFilteredCorrectionData(filteredCorrections);
+      
+    } catch (error) {
+      console.error('Error filtering data by date:', error);
+      // Fallback to local filtering if API fails
+      const filterDataByDate = (data) => {
+        return data.filter(item => {
+          if (!item.created_at) return false;
+          const itemDate = new Date(item.created_at).toISOString().split('T')[0];
+          return itemDate === targetDate;
+        });
+      };
+      
+      setFilteredData(filterDataByDate(stnkData));
+      setFilteredCorrectionData(filterDataByDate(correctionData));
+    } finally {
+      setDateFilterLoading(false);
+    }
+  };
+
+  const handleFilterTypeChange = (type) => {
+    setDateFilter(prev => ({
+      ...prev,
+      filterType: type,
+      selectedDate: type !== 'custom' ? '' : prev.selectedDate
+    }));
+  };
+
+  const handleDateChange = (value) => {
+    setDateFilter(prev => ({
+      ...prev,
+      selectedDate: value
+    }));
+  };
+
+  const clearFilter = () => {
+    setDateFilter({
+      selectedDate: '',
+      filterType: 'all'
+    });
+  };
+
+  const getFilterLabel = () => {
+    switch (dateFilter.filterType) {
+      case 'today':
+        return 'Hari Ini';
+      case 'yesterday':
+        return 'Kemarin';
+      case 'custom':
+        if (dateFilter.selectedDate) {
+          return new Date(dateFilter.selectedDate).toLocaleDateString('id-ID');
+        }
+        return '';
+      case 'all':
+      default:
+        return '';
+    }
+  };
 
   const handleViewDetail = (record) => {
     setSelectedRecord(record);
@@ -122,7 +251,6 @@ const handleSaveCorrection = async () => {
       data: formattedData,
     })).unwrap();
 
-
     window.location.reload();
 
     // Tutup dialog
@@ -134,11 +262,97 @@ const handleSaveCorrection = async () => {
   }
 };
 
-
-
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
+
+  // Render filter component
+  const renderFilter = () => (
+    <Card className="shadow-sm mb-4">
+      <CardHeader
+        title={
+          <Box className="flex items-center justify-between">
+            <Box className="flex items-center gap-2">
+              <i className="bi bi-funnel text-xl text-gray-600"></i>
+              <Typography variant="h6" className="font-semibold">
+                Filter Data
+              </Typography>
+              {getFilterLabel() && (
+                <Chip 
+                  label={getFilterLabel()} 
+                  size="small" 
+                  color="primary" 
+                  onDelete={clearFilter}
+                  className="ml-2"
+                />
+              )}
+              {dateFilterLoading && (
+                <CircularProgress size={16} />
+              )}
+            </Box>
+            <Button
+              onClick={() => setFilterOpen(!filterOpen)}
+              size="small"
+              className="text-gray-600"
+            >
+              {filterOpen ? 'Tutup' : 'Buka'} Filter
+            </Button>
+          </Box>
+        }
+      />
+      <Collapse in={filterOpen}>
+        <Divider />
+        <CardContent>
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Filter Tanggal</InputLabel>
+                <Select
+                  value={dateFilter.filterType}
+                  label="Filter Tanggal"
+                  onChange={(e) => handleFilterTypeChange(e.target.value)}
+                >
+                  <MenuItem value="all">Semua Data</MenuItem>
+                  <MenuItem value="today">Hari Ini</MenuItem>
+                  <MenuItem value="yesterday">Kemarin</MenuItem>
+                  <MenuItem value="custom">Pilih Tanggal</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            {dateFilter.filterType === 'custom' && (
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  label="Pilih Tanggal"
+                  type="date"
+                  value={dateFilter.selectedDate}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
+            )}
+            
+            <Grid item xs={12} sm={4}>
+              <Button
+                onClick={clearFilter}
+                variant="outlined"
+                size="small"
+                startIcon={<i className="bi bi-x-circle"></i>}
+                className="text-gray-600 border-gray-300"
+                disabled={dateFilterLoading}
+              >
+                Reset Filter
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Collapse>
+    </Card>
+  );
 
   // Render table component
   const renderTable = (data, isLoading, tableError, tableTitle, emptyMessage) => (
@@ -266,6 +480,9 @@ const handleSaveCorrection = async () => {
         </Alert>
       )}
 
+      {/* Filter Component */}
+      {renderFilter()}
+
       {/* Tabs for switching between regular data and correction data */}
       <Box className="mb-4">
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="KTP data tabs">
@@ -290,7 +507,7 @@ const handleSaveCorrection = async () => {
 
       {/* Regular Data Table */}
       {activeTab === 0 && renderTable(
-        stnkData,
+        filteredData,
         loading,
         error,
         "Data STNK Regular",
@@ -299,7 +516,7 @@ const handleSaveCorrection = async () => {
 
       {/* Correction Data Table */}
       {activeTab === 1 && renderTable(
-        correctionData,
+        filteredCorrectionData,
         correctionLoading,
         correctionError,
         "Data STNK Koreksi",
@@ -406,7 +623,7 @@ const handleSaveCorrection = async () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                   {/* Nomor Rangka */}
+                   {/* File */}
                   <TableRow>
                     <TableCell className="text-gray-500 font-medium">File</TableCell>
                     <TableCell>
@@ -417,9 +634,9 @@ const handleSaveCorrection = async () => {
                     <TableCell>
                       <TextField
                         fullWidth
-                        value={correctionForm.nik}
-                        onChange={(e) => handleCorrectionFormChange('nomor_rangka', e.target.value)}
-                        placeholder="Masukkan nomor rangka yang benar"
+                        value={correctionForm.file}
+                        onChange={(e) => handleCorrectionFormChange('file', e.target.value)}
+                        placeholder="Masukkan nama file yang benar"
                         size="small"
                       />
                     </TableCell>
@@ -430,7 +647,7 @@ const handleSaveCorrection = async () => {
                     <TableCell className="text-gray-500 font-medium">Nomor Rangka</TableCell>
                     <TableCell>
                       <Typography variant="body1" className="font-mono">
-                        {selectedRecord.nik || "-"}
+                        {selectedRecord.nomor_rangka || "-"}
                       </Typography>
                     </TableCell>
                     <TableCell>

@@ -5,7 +5,8 @@ import {
   getStnkById,
   updateStnk,
   getAllStnkCorrection,
-  saveStnkData
+  saveStnkData,
+  getStnkListByDate 
 } from "@/services/stnkService";
 
 export const fetchStnkList = createAsyncThunk(
@@ -86,6 +87,21 @@ export const saveStnk = createAsyncThunk(
 );
 
 
+export const fetchStnkListByDate = createAsyncThunk(
+  'stnk/fetchStnkListByDate',
+  async (date, { rejectWithValue }) => {
+    try {
+      const response = await getStnkListByDate(date);
+      return response.data;
+    } catch (error) {
+      // Axios automatically handles response parsing and error handling
+      const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+
 // =================== Slice ===================
 
 const stnkSlice = createSlice({
@@ -155,10 +171,22 @@ const stnkSlice = createSlice({
           state.list.push(action.payload);
         }
       })    
-      
-      
-     
 
+            // === CREATE ===
+
+      .addCase(fetchStnkListByDate.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStnkListByDate.fulfilled, (state) => {
+        state.loading = false;
+        // Tidak mengubah state.list karena ini untuk filtering
+        state.error = null;
+      })
+      .addCase(fetchStnkListByDate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
   },
 });
 
