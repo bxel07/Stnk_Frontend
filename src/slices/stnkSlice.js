@@ -6,74 +6,95 @@ import {
   updateStnk,
   getAllStnkCorrection,
   saveStnkData,
-  getStnkListByDate 
+  getStnkListByDate,
+  uploadStnkBatch,
+  updateStnkInfo
 } from "@/services/stnkService";
 
+
+// =============================================
+// ============== ASYNC THUNKS ================
+// =============================================
+
+// -- Fetch All STNK --
 export const fetchStnkList = createAsyncThunk(
   'stnk/fetchList',
   async (_, { rejectWithValue }) => {
     try {
       const response = await getAllStnk();
-      // The API returns { data: [...] }
-      return response.data.data; // Extract the data array
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch STNK data');
     }
   }
 );
 
+// -- Fetch STNK by Correction --
 export const fetchStnkListByCorrection = createAsyncThunk(
   'stnk/fetchListByCorrection',
   async (_, { rejectWithValue }) => {
     try {
       const response = await getAllStnkCorrection();
-      // The API returns { data: [...] }
-      return response.data.data; // Extract the data array
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch STNK data');
     }
   }
 );
 
+// -- Fetch STNK by ID --
 export const fetchStnkById = createAsyncThunk(
   "stnk/fetchById",
   async (id, { rejectWithValue }) => {
     try {
       const res = await getStnkById(id);
-
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response.data);
+      return rejectWithValue(err.response?.data || 'Failed to fetch STNK by ID');
     }
   }
 );
 
+// -- Create STNK --
 export const createStnk = createAsyncThunk(
   "stnk/create",
   async (formData, { rejectWithValue }) => {
     try {
       const res = await uploadStnk(formData);
-
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response.data);
+      return rejectWithValue(err.response?.data || 'Failed to create STNK');
     }
   }
 );
 
+// -- Update STNK --
 export const editStnk = createAsyncThunk(
   "stnk/edit",
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const res = await updateStnk(id, data);
-
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response.data);
+      return rejectWithValue(err.response?.data || 'Failed to update STNK');
     }
   }
 );
 
+// -- Update Info Saja --
+export const updateStnkInfoThunk = createAsyncThunk(
+  "stnk/updateInfo",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const res = await updateStnkInfo(id, data);
+      return { id, updated: data, response: res.data };
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Failed to update STNK info");
+    }
+  }
+);
+
+// -- Save STNK --
 export const saveStnk = createAsyncThunk(
   "stnk/saveData",
   async (data, { rejectWithValue }) => {
@@ -86,7 +107,7 @@ export const saveStnk = createAsyncThunk(
   }
 );
 
-
+// -- Fetch STNK by Date --
 export const fetchStnkListByDate = createAsyncThunk(
   'stnk/fetchStnkListByDate',
   async (date, { rejectWithValue }) => {
@@ -94,15 +115,29 @@ export const fetchStnkListByDate = createAsyncThunk(
       const response = await getStnkListByDate(date);
       return response.data;
     } catch (error) {
-      // Axios automatically handles response parsing and error handling
       const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
       return rejectWithValue(errorMessage);
     }
   }
 );
 
+// -- Process STNK Batch --
+export const processStnkBatch = createAsyncThunk(
+  "stnk/processBatch",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const res = await uploadStnkBatch(formData);
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Gagal memproses batch STNK");
+    }
+  }
+);
 
-// =================== Slice ===================
+
+// =============================================
+// =============== STNK SLICE ==================
+// =============================================
 
 const stnkSlice = createSlice({
   name: "stnk",
@@ -110,85 +145,161 @@ const stnkSlice = createSlice({
     list: [],
     selected: null,
     loading: false,
-    error: null, // Tambahkan untuk menangani error
+    error: null,
+    lastBatchResult: null,
   },
   reducers: {
     clearSelectedStnk: (state) => {
       state.selected = null;
     },
+    clearError: (state) => {
+      state.error = null;
+    },
+    clearLastBatchResult: (state) => {
+      state.lastBatchResult = null;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // === FETCH ALL ===
-      .addCase(fetchStnkList.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+
+      // === FETCH ===
+      .addCase(fetchStnkList.pending, state => { state.loading = true; state.error = null; })
       .addCase(fetchStnkList.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        state.list = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchStnkList.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || action.error.message;
       })
 
-      // === FETCH BY CORRECTION ===
-      .addCase(fetchStnkListByCorrection.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-
-      
+      .addCase(fetchStnkListByCorrection.pending, state => { state.loading = true; state.error = null; })
       .addCase(fetchStnkListByCorrection.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload; // Ini yang memastikan data update
+        state.list = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchStnkListByCorrection.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || action.error.message;
       })
 
-      // === FETCH BY ID ===
+      .addCase(fetchStnkById.pending, state => { state.loading = true; state.error = null; })
       .addCase(fetchStnkById.fulfilled, (state, action) => {
+        state.loading = false;
         state.selected = action.payload;
       })
-
-      // === CREATE ===
-      .addCase(createStnk.fulfilled, (state, action) => {
-        state.list.push(action.payload);
-      })
-
-
-      .addCase(editStnk.fulfilled, (state, action) => {
-        // Cari ID-nya
-        const idx = state.list.findIndex(item => item.id === action.payload.id);
-        if (idx !== -1) {
-          // Replace datanya
-          state.list[idx] = action.payload;
-        } else {
-          // Tambahkan jika belum ada
-          state.list.push(action.payload);
-        }
-      })    
-
-            // === CREATE ===
-
-      .addCase(fetchStnkListByDate.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchStnkListByDate.fulfilled, (state) => {
+      .addCase(fetchStnkById.rejected, (state, action) => {
         state.loading = false;
-        // Tidak mengubah state.list karena ini untuk filtering
-        state.error = null;
+        state.error = action.payload || action.error.message;
       })
+
+      .addCase(fetchStnkListByDate.pending, state => { state.loading = true; state.error = null; })
+      .addCase(fetchStnkListByDate.fulfilled, state => { state.loading = false; })
       .addCase(fetchStnkListByDate.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+
+      // === CREATE ===
+      .addCase(createStnk.pending, state => { state.loading = true; state.error = null; })
+      .addCase(createStnk.fulfilled, (state, action) => {
+        state.loading = false;
+        if (!Array.isArray(state.list)) state.list = [];
+        if (action.payload) state.list.push(action.payload);
+      })
+      .addCase(createStnk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+
+      // === EDIT ===
+      .addCase(editStnk.pending, state => { state.loading = true; state.error = null; })
+      .addCase(editStnk.fulfilled, (state, action) => {
+        state.loading = false;
+        if (!Array.isArray(state.list)) state.list = [];
+        const idx = state.list.findIndex(item => item.id === action.payload?.id);
+        if (idx !== -1) {
+          state.list[idx] = action.payload;
+        } else {
+          state.list.push(action.payload);
+        }
+      })
+      .addCase(editStnk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+
+      // === UPDATE INFO ===
+      .addCase(updateStnkInfoThunk.pending, state => { state.loading = true; state.error = null; })
+      .addCase(updateStnkInfoThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const { id, updated } = action.payload;
+        const idx = state.list.findIndex(item => item.id === id);
+        if (idx !== -1) {
+          state.list[idx] = { ...state.list[idx], ...updated };
+        }
+      })
+      .addCase(updateStnkInfoThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+
+      // === SAVE ===
+      .addCase(saveStnk.pending, state => { state.loading = true; state.error = null; })
+      .addCase(saveStnk.fulfilled, state => { state.loading = false; })
+      .addCase(saveStnk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+
+      // === BATCH ===
+      .addCase(processStnkBatch.pending, state => {
+        state.loading = true;
+        state.error = null;
+        state.lastBatchResult = null;
+      })
+      .addCase(processStnkBatch.fulfilled, (state, action) => {
+        state.loading = false;
+        state.lastBatchResult = action.payload;
+
+        if (action.payload?.status === 'completed' && Array.isArray(action.payload?.results)) {
+          const successfulUploads = action.payload.results.filter(r => r?.status === 'success' && r.nomor_rangka);
+          if (!Array.isArray(state.list)) state.list = [];
+
+          const transformedData = successfulUploads.map(result => ({
+            id: result.id || `batch_${Date.now()}_${Math.random()}`,
+            filename: result.filename,
+            nomor_rangka: result.nomor_rangka,
+            asal_kendaraan: result.details?.asal_kendaraan || '',
+            pabrikan: result.details?.pabrikan || '',
+            jumlah: result.details?.jumlah || 0,
+            tahun_kendaraan: result.details?.tahun_kendaraan || null,
+            found_by_method: result.details?.found_by_method || '',
+            created_at: new Date().toISOString(),
+            ...result
+          }));
+
+          state.list = [...state.list, ...transformedData];
+          console.log(`Successfully added ${transformedData.length} STNK records to state`);
+        }
+      })
+      .addCase(processStnkBatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to process STNK batch';
+        state.lastBatchResult = null;
+      });
   },
 });
 
-export const { clearSelectedStnk } = stnkSlice.actions;
+
+// =============================================
+// ================ EXPORT =====================
+// =============================================
+
+export const {
+  clearSelectedStnk,
+  clearError,
+  clearLastBatchResult
+} = stnkSlice.actions;
+
 export default stnkSlice.reducer;

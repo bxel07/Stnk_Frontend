@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchStnkList, fetchStnkListByCorrection, fetchStnkListByDate, editStnk} from "@/slices/stnkSlice";
+import { toast } from 'react-toastify';
+import { fetchStnkList, fetchStnkListByCorrection, fetchStnkListByDate, editStnk,   updateStnkInfoThunk } from "@/slices/stnkSlice";
+  // Filter data based on date when data or filter changes
+import { useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -35,6 +38,8 @@ import {
   MenuItem,
   Collapse
 } from "@mui/material";
+
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const STNKDataTable = () => {
   const dispatch = useDispatch();
@@ -82,7 +87,7 @@ const STNKDataTable = () => {
       dispatch(fetchStnkListByCorrection())
         .unwrap()
         .then((data) => {
-          setCorrectionData(data);
+          setCorrectionData(Array.isArray(data) ? data : []);
           setCorrectionLoading(false);
         })
         .catch((error) => {
@@ -92,20 +97,16 @@ const STNKDataTable = () => {
     }
   }, [activeTab, dispatch, correctionData.length]);
 
-  // Filter data based on date when data or filter changes
-  useEffect(() => {
-    if (dateFilter.filterType === 'all') {
-      setFilteredData(stnkData);
-      setFilteredCorrectionData(correctionData);
-    } else {
-      applyDateFilter();
-    }
-  }, [stnkData, correctionData, dateFilter]);
 
-  const applyDateFilter = async () => {
+  
+  const applyDateFilter = useCallback(async () => {
+    // Pastikan data selalu berupa array
+    const safeMainData = Array.isArray(stnkData) ? stnkData : [];
+    const safeCorrectionData = Array.isArray(correctionData) ? correctionData : [];
+    
     if (dateFilter.filterType === 'all') {
-      setFilteredData(stnkData);
-      setFilteredCorrectionData(correctionData);
+      setFilteredData(safeMainData);
+      setFilteredCorrectionData(safeCorrectionData);
       return;
     }
 
@@ -118,10 +119,10 @@ const STNKDataTable = () => {
         targetDate = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
         break;
       case 'yesterday':
-        const yesterday = new Date(now);
+        { const yesterday = new Date(now);
         yesterday.setDate(now.getDate() - 1);
         targetDate = yesterday.toISOString().split('T')[0];
-        break;
+        break; }
       case 'custom':
         targetDate = dateFilter.selectedDate;
         break;
@@ -137,12 +138,14 @@ const STNKDataTable = () => {
       // Fetch data from API endpoint
       const response = await dispatch(fetchStnkListByDate(targetDate)).unwrap();
       
-      // Set filtered data for regular tab
-      setFilteredData(response.data || []);
+      // Set filtered data for regular tab - pastikan selalu array
+      const responseData = Array.isArray(response?.data) ? response.data : 
+                          Array.isArray(response) ? response : [];
+      setFilteredData(responseData);
       
       // For correction data, we'll filter locally since we don't have separate endpoint
       // You can create a similar endpoint for correction data if needed
-      const filteredCorrections = correctionData.filter(item => {
+      const filteredCorrections = safeCorrectionData.filter(item => {
         if (!item.created_at) return false;
         const itemDate = new Date(item.created_at).toISOString().split('T')[0];
         return itemDate === targetDate;
@@ -153,19 +156,33 @@ const STNKDataTable = () => {
       console.error('Error filtering data by date:', error);
       // Fallback to local filtering if API fails
       const filterDataByDate = (data) => {
-        return data.filter(item => {
+        const safeData = Array.isArray(data) ? data : [];
+        return safeData.filter(item => {
           if (!item.created_at) return false;
           const itemDate = new Date(item.created_at).toISOString().split('T')[0];
           return itemDate === targetDate;
         });
       };
       
-      setFilteredData(filterDataByDate(stnkData));
-      setFilteredCorrectionData(filterDataByDate(correctionData));
+      setFilteredData(filterDataByDate(safeMainData));
+      setFilteredCorrectionData(filterDataByDate(safeCorrectionData));
     } finally {
       setDateFilterLoading(false);
     }
-  };
+  }, [stnkData, correctionData, dateFilter, dispatch]);
+
+  useEffect(() => {
+    // Pastikan data selalu berupa array
+    const safeMainData = Array.isArray(stnkData) ? stnkData : [];
+    const safeCorrectionData = Array.isArray(correctionData) ? correctionData : [];
+    
+    if (dateFilter.filterType === 'all') {
+      setFilteredData(safeMainData);
+      setFilteredCorrectionData(safeCorrectionData);
+    } else {
+      applyDateFilter();
+    }
+  }, [stnkData, correctionData, dateFilter, applyDateFilter]);
 
   const handleFilterTypeChange = (type) => {
     setDateFilter(prev => ({
@@ -227,13 +244,13 @@ const STNKDataTable = () => {
     }));
   };
 
-const handleSaveCorrection = async () => {
+  const handleSaveCorrection = async () => {
   if (!selectedRecord?.id) return;
 
   setSavingCorrection(true);
 
   const formattedData = Object.entries(correctionForm || {})
-    .filter(([_, value]) => value && value.trim() !== "")
+    .filter(([, value]) => value && value.trim() !== "")
     .map(([key, value]) => ({
       field_name: key,
       corrected_value: value.trim(),
@@ -260,7 +277,7 @@ const handleSaveCorrection = async () => {
   } finally {
     setSavingCorrection(false);
   }
-};
+  };
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -354,123 +371,280 @@ const handleSaveCorrection = async () => {
     </Card>
   );
 
-  // Render table component
-  const renderTable = (data, isLoading, tableError, tableTitle, emptyMessage) => (
-    <Card className="shadow-md">
-      <CardHeader
-        title={
-          <Box className="flex items-center justify-between">
-            <Box className="flex items-center gap-2">
-              <i className="bi bi-table text-xl text-gray-600"></i>
-              <Typography variant="h6" className="font-semibold">
-                {tableTitle} ({data.length})
-              </Typography>
-            </Box>
-            {isLoading && (
-              <Box className="flex items-center gap-2">
-                <CircularProgress size={20} />
-                <Typography variant="body2" className="text-gray-500">
-                  Loading...
-                </Typography>
+  const BASE_URL = import.meta.env.VITE_API_URL;
+
+  const [zoomImage, setZoomImage] = useState(null);
+
+  const handleZoomImage = (imageUrl) => {
+    setZoomImage(imageUrl);
+  };
+
+  const handleCloseZoom = () => {
+    setZoomImage(null);
+  };
+
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState(null);
+
+  const handleOpenEditDialog = (row) => {
+    setEditRecord(row);
+    setEditDialogOpen(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditRecord(null);
+  };
+
+  const handleEditSubmit = () => {
+  if (!editRecord?.id) return;
+
+  dispatch(updateStnkInfoThunk({
+    id: editRecord.id,
+    data: {
+      nomor_rangka: editRecord.nomor_rangka,
+      jumlah: editRecord.jumlah
+    }
+  }))
+    .unwrap()
+    .then(() => {
+      toast.success("Data berhasil diperbarui");
+      setEditDialogOpen(false);
+    })
+    .catch((err) => {
+      toast.error(err.message || "Gagal memperbarui data");
+    });
+};
+
+
+  const renderTable = (data, isLoading, tableError, tableTitle, emptyMessage) => {
+    const safeData = Array.isArray(data) ? data : [];
+    const totalGambar = safeData.filter(d => !!d.image_url).length;
+
+    const formatRupiah = (angka) => {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+      }).format(angka || 0);
+    };
+
+    return (
+        <>
+          <Card className="shadow-md mb-4">
+            <CardHeader
+              title={
+                <Box className="flex items-center justify-between">
+                  <Box className="flex items-center gap-2">
+                    <i className="bi bi-table text-xl text-gray-600"></i>
+                    <Typography variant="h6" className="font-semibold">
+                      {tableTitle} ({safeData.length} data, {totalGambar} gambar)
+                    </Typography>
+                  </Box>
+                  {isLoading && (
+                    <Box className="flex items-center gap-2">
+                      <CircularProgress size={20} />
+                      <Typography variant="body2" className="text-gray-500">Loading...</Typography>
+                    </Box>
+                  )}
+                </Box>
+              }
+            />
+            <Divider />
+            <CardContent className="p-0">
+              {tableError && (
+                <Box className="p-4">
+                  <Alert severity="error">{tableError}</Alert>
+                </Box>
+              )}
+
+              {safeData.length === 0 ? (
+                <Box className="text-center py-12">
+                  <i className="bi bi-inbox text-6xl text-gray-300 mb-4 block"></i>
+                  <Typography variant="h6" className="text-gray-500 mb-2">{emptyMessage}</Typography>
+                  <Typography variant="body2" className="text-gray-400">
+                    {activeTab === 0 ? "Upload gambar STNK untuk menambah data" : "Belum ada data koreksi STNK"}
+                  </Typography>
+                </Box>
+              ) : (
+                <TableContainer component={Paper} className="max-h-96">
+                  <Table stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell className="bg-gray-100 font-bold text-gray-700">Gambar</TableCell>
+                        <TableCell className="bg-gray-100 font-bold text-gray-700">File</TableCell>
+                        <TableCell className="bg-gray-100 font-bold text-gray-700">Nomor Rangka</TableCell>
+                        <TableCell className="bg-gray-100 font-bold text-gray-700">Jumlah (Rp)</TableCell> {/* BARU */}
+                        <TableCell className="bg-gray-100 font-bold text-gray-700">Tanggal Dibuat</TableCell>
+                        <TableCell className="bg-gray-100 font-bold text-gray-700 text-center">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {safeData.map((row) => (
+                        <TableRow key={row.id} hover className="cursor-pointer">
+                          <TableCell>
+                            {row.image_url ? (
+                              <img
+                                src={`${BASE_URL}${row.image_url}`}
+                                alt="preview"
+                                title="Klik untuk zoom"
+                                className="h-12 rounded shadow cursor-zoom-in hover:opacity-80"
+                                onClick={() => handleZoomImage(`${BASE_URL}${row.image_url}`)}
+                              />
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm font-medium">{row.file || "-"}</TableCell>
+                          <TableCell className="font-mono text-sm font-medium">{row.nomor_rangka || "-"}</TableCell>
+                          <TableCell className="font-mono text-sm text-green-700 font-semibold"> {/* BARU */}
+                            {formatRupiah(row.jumlah)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {row.created_at
+                              ? new Date(row.created_at).toLocaleString("id-ID", {
+                                  year: "numeric",
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Box className="flex justify-left">
+                              <Tooltip title="View Details">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleViewDetail(row)}
+                                  className="text-blue-600 hover:bg-blue-50"
+                                >
+                                  <i className="bi bi-eye"></i>
+                                </IconButton>
+                              </Tooltip>
+
+                              <Tooltip title="Edit Data">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenEditDialog(row)}
+                                  className="text-orange-600 hover:bg-orange-50"
+                                >
+                                  <i className="bi bi-pencil"></i>
+                                </IconButton>
+                              </Tooltip>
+
+                              {activeTab === 1 && (
+                                <Tooltip title="Edit Correction">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleEditCorrection(row)}
+                                    className="text-green-600 hover:bg-green-50"
+                                  >
+                                    <i className="bi bi-pencil-square"></i>
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Dialog Zoom Gambar */}
+          <Dialog open={!!zoomImage} onClose={handleCloseZoom} maxWidth="md" fullWidth>
+            <DialogTitle className="bg-gray-100">
+              <Box className="flex justify-between items-center">
+                <Typography variant="h6">Pratinjau Gambar</Typography>
+                <IconButton onClick={handleCloseZoom}>
+                  <i className="bi bi-x-lg text-gray-600"></i>
+                </IconButton>
               </Box>
-            )}
-          </Box>
-        }
-      />
-      <Divider />
-      <CardContent className="p-0">
-        {tableError && (
-          <Alert severity="error" className="m-4">
-            {tableError}
-          </Alert>
-        )}
-        
-        {data.length === 0 ? (
-          <Box className="text-center py-12">
-            <i className="bi bi-inbox text-6xl text-gray-300 mb-4 block"></i>
-            <Typography variant="h6" className="text-gray-500 mb-2">
-              {emptyMessage}
-            </Typography>
-            <Typography variant="body2" className="text-gray-400">
-              {activeTab === 0 ? "Upload gambar STNK untuk menambah data" : "Belum ada data koreksi STNK"}
-            </Typography>
-          </Box>
-        ) : (
-          <TableContainer component={Paper} className="max-h-96">
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell className="bg-gray-100 font-bold text-gray-700">
-                    File
-                  </TableCell>
-                  <TableCell className="bg-gray-100 font-bold text-gray-700">
-                    Nomor Rangka
-                  </TableCell>
-                  <TableCell className="bg-gray-100 font-bold text-gray-700">
-                    Tanggal Dibuat
-                  </TableCell>
-                  <TableCell className="bg-gray-100 font-bold text-gray-700 text-center">
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {data.map((row) => {   
-                  return (
-                    <TableRow key={row.id} hover className="cursor-pointer">
-                      <TableCell className="font-mono text-sm font-medium">
-                        {row.file || "-"}
-                      </TableCell>     
-                      <TableCell className="font-mono text-sm font-medium">
-                        {row.nomor_rangka || "-"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {row.created_at 
-                          ? new Date(row.created_at).toLocaleString('id-ID', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
-                          : "-"
-                        }
-                      </TableCell>                    
-                      <TableCell>
-                        <Box className="flex gap-1 justify-center">
-                          <Tooltip title="View Details">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleViewDetail(row)}
-                              className="text-blue-600 hover:bg-blue-50"
-                            >
-                              <i className="bi bi-eye"></i>
-                            </IconButton>
-                          </Tooltip>
-                          {/* Show edit button only for correction tab */}
-                          {activeTab === 1 && (
-                            <Tooltip title="Edit Correction">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditCorrection(row)}
-                                className="text-green-600 hover:bg-green-50"
-                              >
-                                <i className="bi bi-pencil-square"></i>
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </CardContent>
-    </Card>
-  );
+            </DialogTitle>
+            <Divider />
+            <DialogContent className="flex justify-center items-center p-4">
+              <img
+                src={zoomImage}
+                alt="Zoom"
+                className="max-h-[80vh] w-auto rounded shadow"
+              />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
+            <DialogTitle className="bg-orange-50">
+              <Box className="flex justify-between items-center">
+                <Typography variant="h6" className="text-orange-800 font-semibold">Edit Data</Typography>
+                <IconButton onClick={handleCloseEditDialog}>
+                  <i className="bi bi-x-lg text-gray-600"></i>
+                </IconButton>
+              </Box>
+            </DialogTitle>
+
+            <Divider />
+
+            <DialogContent className="px-6 pt-4 pb-2">
+              {editRecord && (
+                <Box className="space-y-5">
+                  {editRecord.image_url && (
+                    <Box className="text-center">
+                      <img
+                        src={`${BASE_URL}${editRecord.image_url}`}
+                        alt="Pratinjau"
+                        className="max-h-48 mx-auto rounded shadow cursor-zoom-in hover:opacity-80"
+                        onClick={() => handleZoomImage(`${BASE_URL}${editRecord.image_url}`)}
+                      />
+                    </Box>
+                  )}
+
+                  <TextField
+                    label="Nomor Rangka"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    value={editRecord.nomor_rangka || ""}
+                    onChange={(e) =>
+                      setEditRecord({ ...editRecord, nomor_rangka: e.target.value })
+                    }
+                  />
+
+                  <TextField
+                    label="Jumlah (Rp)"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    type="number"
+                    value={editRecord.jumlah || ""}
+                    onChange={(e) =>
+                      setEditRecord({ ...editRecord, jumlah: parseInt(e.target.value) || 0 })
+                    }
+                  />
+                </Box>
+              )}
+            </DialogContent>
+
+            <Divider />
+
+            <DialogActions className="p-4">
+              <Button onClick={handleCloseEditDialog} className="text-gray-600">
+                Batal
+              </Button>
+              <Button
+                onClick={handleEditSubmit}
+                className="bg-orange-600 text-white hover:bg-orange-700"
+              >
+                Simpan
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+
+        </>
+    );
+  };
 
   return (
     <>
@@ -523,7 +697,7 @@ const handleSaveCorrection = async () => {
         "Belum ada data koreksi STNK"
       )}
 
-     <Dialog
+      <Dialog
         open={detailDialog}
         onClose={() => setDetailDialog(false)}
         maxWidth="md"
@@ -542,7 +716,44 @@ const handleSaveCorrection = async () => {
           {selectedRecord && (
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
-                <Box className="space-y-3">
+                <Box className="space-y-4">
+
+                  {/* Gambar Preview dengan klik zoom */}
+                  {selectedRecord.image_url && (
+                    <>
+                      <Box className="text-center">
+                        <img
+                          src={`${BASE_URL}${selectedRecord.image_url}`}
+                          alt="Gambar STNK"
+                          className="max-h-64 mx-auto rounded shadow cursor-zoom-in hover:opacity-80"
+                          title="Klik untuk perbesar"
+                          onClick={() => handleZoomImage(`${BASE_URL}${selectedRecord.image_url}`)}
+                        />
+                      </Box>
+
+                      {/* Zoom Dialog */}
+                      <Dialog open={!!zoomImage} onClose={handleCloseZoom} maxWidth="md">
+                        <DialogTitle className="bg-gray-100">
+                          <Box className="flex justify-between items-center">
+                            <Typography variant="body1">Pratinjau Gambar</Typography>
+                            <IconButton onClick={handleCloseZoom}>
+                              <i className="bi bi-x-lg text-gray-600"></i>
+                            </IconButton>
+                          </Box>
+                        </DialogTitle>
+                        <Divider />
+                        <DialogContent className="flex justify-center items-center p-4">
+                          <img
+                            src={zoomImage}
+                            alt="Zoom"
+                            className="max-h-[80vh] w-auto rounded shadow"
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    </>
+                  )}
+
+                  {/* File */}
                   <Box>
                     <Typography variant="body2" className="text-gray-500 font-medium">
                       File
@@ -552,6 +763,7 @@ const handleSaveCorrection = async () => {
                     </Typography>
                   </Box>
 
+                  {/* Nomor Rangka */}
                   <Box>
                     <Typography variant="body2" className="text-gray-500 font-medium">
                       Nomor Rangka
@@ -561,12 +773,27 @@ const handleSaveCorrection = async () => {
                     </Typography>
                   </Box>
 
+                  {/* Jumlah */}
+                  <Box>
+                    <Typography variant="body2" className="text-gray-500 font-medium">
+                      Jumlah
+                    </Typography>
+                    <Typography variant="body1" className="font-mono text-green-700 font-semibold">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0
+                      }).format(selectedRecord.jumlah || 0)}
+                    </Typography>
+                  </Box>
+
+                  {/* Tanggal Dibuat */}
                   <Box>
                     <Typography variant="body2" className="text-gray-500 font-medium">
                       Tanggal Dibuat
                     </Typography>
                     <Typography variant="body1" className="font-mono">
-                      {selectedRecord.created_at 
+                      {selectedRecord.created_at
                         ? new Date(selectedRecord.created_at).toLocaleString('id-ID', {
                             year: 'numeric',
                             month: '2-digit',
@@ -575,8 +802,7 @@ const handleSaveCorrection = async () => {
                             minute: '2-digit',
                             second: '2-digit'
                           })
-                        : "-"
-                      }
+                        : "-"}
                     </Typography>
                   </Box>
                 </Box>
@@ -594,6 +820,7 @@ const handleSaveCorrection = async () => {
           </Button>
         </DialogActions>
       </Dialog>
+
 
       {/* Edit Correction Dialog */}
       <Dialog

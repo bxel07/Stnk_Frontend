@@ -1,40 +1,92 @@
+// STNK Multi Upload dengan Expandable Results Dialog - Fixed Reset
 import { useState, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { createStnk } from "@/slices/stnkSlice";
-import { saveStnk } from "@/slices/stnkSlice";
-
+import { processStnkBatch, saveStnk } from "@/slices/stnkSlice";
 import {
   Card, CardContent, CardHeader, Typography, Button, Grid, Box,
   Chip, CircularProgress, Alert, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField
+  TextField, Accordion, AccordionSummary, AccordionDetails,
+  Badge, IconButton
 } from "@mui/material";
 
 const STNKUpload = () => {
   const dispatch = useDispatch();
-
-  // Local state
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [scanResults, setScanResults] = useState([]);
+  const [correctedNumbers, setCorrectedNumbers] = useState([]);
+  const [correctedQuantities, setCorrectedQuantities] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [previewDialog, setPreviewDialog] = useState(false);
-  const [cameraDialog, setCameraDialog] = useState(false);
   const [resultDialog, setResultDialog] = useState(false);
+  const [cameraDialog, setCameraDialog] = useState(false);
   const [error, setError] = useState(null);
-  const [scanResult, setScanResult] = useState(null);
-  const [correctedNumber, setCorrectedNumber] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submit loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expandedPanels, setExpandedPanels] = useState(new Set([0])); // Default expand first item
+  const [zoomDialog, setZoomDialog] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState({ src: "", title: "" });
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Buka kamera
+  const handleImageUpload = (event) => {
+    const files = Array.from(event.target.files).slice(0, 10 - selectedImages.length);
+    const newImages = [];
+    const newPreviews = [];
+
+    files.forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 5 * 1024 * 1024) return;
+
+      newImages.push(file);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        newPreviews.push(e.target.result);
+        if (newPreviews.length === newImages.length) {
+          setImagePreviews((prev) => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    const updatedImages = [...selectedImages, ...newImages];
+    setSelectedImages(updatedImages);
+
+    if (newImages.length > 0) {
+      processSTNKBatchRequest(updatedImages);
+    }
+  };
+
+  const processSTNKBatchRequest = async (files) => {
+    setIsProcessing(true);
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+
+      const response = await dispatch(processStnkBatch(formData)).unwrap();
+      const results = Array.isArray(response.results) ? response.results : [];
+      setScanResults(results);
+      setCorrectedNumbers(results.map((r) => r.nomor_rangka || ""));
+      // Extract jumlah from nested details
+      setCorrectedQuantities(results.map((r) => r.details?.jumlah?.toString() || "0"));
+      setResultDialog(true);
+      // Auto expand first result
+      setExpandedPanels(new Set([0]));
+    } catch (err) {
+      console.error("Gagal memproses batch STNK:", err);
+      setError("Gagal memproses gambar STNK.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const openCamera = async () => {
     setError(null);
     try {
       setCameraDialog(true);
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }
+        video: { facingMode: "environment" },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -46,50 +98,15 @@ const STNKUpload = () => {
     }
   };
 
-  // Tutup kamera
   const closeCamera = () => {
     setCameraDialog(false);
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
+      tracks.forEach((track) => track.stop());
       videoRef.current.srcObject = null;
     }
   };
 
-  // Process STNK automatically
-  const processSTNKAutomatically = async (imageFile) => {
-    if (!imageFile) return;
-    
-    setIsProcessing(true);
-    setError(null);
-    
-    try {
-      const formData = new FormData();
-      formData.append("file", imageFile);
-      
-      // Call the API to process STNK
-      const result = await dispatch(createStnk(formData)).unwrap();
-      
-      // Set scan result and initialize corrected number with the scanned value
-      setScanResult(result);
-      const scannedNumber = result.nomor_rangka || "";
-      setCorrectedNumber(scannedNumber);
-      
-      // Show result dialog
-      setResultDialog(true);
-      
-    } catch (err) {
-      console.error("Error processing STNK:", err);
-      setError("Gagal memproses STNK. Silakan coba lagi.");
-      // Reset states on error
-      setScanResult(null);
-      setCorrectedNumber("");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Ambil foto dari kamera
   const handleTakePhoto = () => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -98,333 +115,180 @@ const STNKUpload = () => {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => {
+      canvas.toBlob((blob) => {
         if (blob) {
-          const file = new File([blob], "stnk_camera.jpg", { type: "image/jpeg" });
-          setSelectedImage(file);
-
+          const file = new File([blob], `stnk_camera_${Date.now()}.jpg`, { type: "image/jpeg" });
           const reader = new FileReader();
-          reader.onload = (e) => setImagePreview(e.target.result);
+          reader.onload = (e) => {
+            setImagePreviews((prev) => [...prev, e.target.result]);
+          };
           reader.readAsDataURL(file);
-
-          closeCamera();
-          
-          // Automatically process the captured image
-          processSTNKAutomatically(file);
+          const updatedImages = [...selectedImages, file];
+          setSelectedImages(updatedImages);
+          processSTNKBatchRequest(updatedImages);
         }
       }, "image/jpeg", 0.9);
     }
+    closeCamera();
   };
 
-  // Upload file handler
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setError(null);
-      if (file.size > 5 * 1024 * 1024) {
-        setError("File terlalu besar. Maksimal 5MB.");
-        return;
-      }
-      if (!file.type.startsWith("image/")) {
-        setError("File harus berupa gambar.");
-        return;
-      }
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setImagePreview(e.target.result);
-      reader.readAsDataURL(file);
-      
-      // Automatically process the uploaded image
-      processSTNKAutomatically(file);
+  const handleAccordionChange = (panelIndex) => (event, isExpanded) => {
+    const newExpanded = new Set(expandedPanels);
+    if (isExpanded) {
+      newExpanded.add(panelIndex);
+    } else {
+      newExpanded.delete(panelIndex);
     }
+    setExpandedPanels(newExpanded);
   };
 
-  // Handle final submission with corrected data
-  const handleFinalSubmit = async () => {
-    if (!scanResult || !correctedNumber.trim()) {
-      setError("Nomor rangka tidak boleh kosong.");
-      return;
-    }
+  const expandAll = () => {
+    setExpandedPanels(new Set(Array.from({ length: scanResults.length }, (_, i) => i)));
+  };
 
-    setIsSubmitting(true);
+  const collapseAll = () => {
+    setExpandedPanels(new Set());
+  };
+
+  const getStatusChip = (result, correctedNumber, originalNumber) => {
+    if (!correctedNumber.trim()) {
+      return <Chip label="Perlu Koreksi" color="error" size="small" />;
+    }
+    if (correctedNumber.trim() !== originalNumber) {
+      return <Chip label="Dikoreksi" color="warning" size="small" />;
+    }
+    return <Chip label="Valid" color="success" size="small" />;
+  };
+
+  // Improved reset function
+  const handleReset = () => {
+    // Reset all states
+    setSelectedImages([]);
+    setImagePreviews([]);
+    setScanResults([]);
+    setCorrectedNumbers([]);
+    setCorrectedQuantities([]);
+    setExpandedPanels(new Set());
+    setZoomDialog(false);
+    setZoomedImage({ src: "", title: "" });
     setError(null);
+    setResultDialog(false);
+    setIsProcessing(false);
+    setIsSubmitting(false);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
+  const handleFinalSubmit = async () => {
+    setIsSubmitting(true);
     try {
-      const originalNumber = scanResult.nomor_rangka || "";
-      const finalData = {
-        ...scanResult,
-        nomor_rangka: correctedNumber.trim(),
-        corrected: correctedNumber.trim() !== originalNumber
-      };
-
-      console.log("Final data to be saved:", finalData);
-
-      // Call saveStnk with dispatch
-      await dispatch(saveStnk(finalData)).unwrap();
-
-      // Reset UI after success
-      handleReset();
-      setResultDialog(false);
+      for (let i = 0; i < scanResults.length; i++) {
+        const originalNumber = scanResults[i]?.nomor_rangka || "";
+        const originalQuantity = scanResults[i]?.details?.jumlah || 0;
+        const finalData = {
+          ...scanResults[i],
+          nomor_rangka: correctedNumbers[i].trim(),
+          details: {
+            ...scanResults[i].details,
+            jumlah: parseInt(correctedQuantities[i]) || 0
+          },
+          corrected: correctedNumbers[i].trim() !== originalNumber || 
+                    (parseInt(correctedQuantities[i]) || 0) !== originalQuantity,
+        };
+        await dispatch(saveStnk(finalData)).unwrap();
+      }
       
       // Show success message
-      alert("Data STNK berhasil disimpan!");
+      alert("Semua data STNK berhasil disimpan!");
+      
+      // Force reset after successful submission
+      setTimeout(() => {
+        handleReset();
+      }, 100); // Small delay to ensure all async operations complete
       
     } catch (err) {
-      console.error("Error saving final data:", err);
-      setError("Gagal menyimpan data. Silakan coba lagi.");
-    } finally {
-      setIsSubmitting(false);
+      console.error("Gagal menyimpan STNK:", err);
+      setError("Gagal menyimpan satu atau lebih data STNK.");
+      setIsSubmitting(false); // Only reset submitting state on error
     }
   };
 
-  // Handle cancel/close result dialog
-  const handleCancelResult = () => {
-    setResultDialog(false);
-    setScanResult(null);
-    setCorrectedNumber("");
+  const handleImageZoom = (imageSrc, imageTitle) => {
+    setZoomedImage({ src: imageSrc, title: imageTitle });
+    setZoomDialog(true);
   };
 
-  const handlePreview = () => {
-    if (imagePreview) setPreviewDialog(true);
+  const closeZoom = () => {
+    setZoomDialog(false);
+    setZoomedImage({ src: "", title: "" });
   };
 
-  const handleReset = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
-    setError(null);
-    setScanResult(null);
-    setCorrectedNumber("");
+  // Handle dialog close with proper reset
+  const handleResultDialogClose = () => {
     setResultDialog(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    // Optional: Ask user if they want to reset
+    if (window.confirm("Apakah Anda ingin mereset form untuk upload baru?")) {
+      handleReset();
+    }
   };
 
   return (
     <>
-      {error && <Alert severity="error" className="mb-4">{error}</Alert>}
-
+      {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
       <Card className="mb-6 shadow-md">
-        <CardHeader
-          title={
-            <Box className="flex items-center gap-2">
-              <i className="bi bi-cloud-upload-fill text-xl text-gray-600"></i>
-              <Typography variant="h6" className="font-semibold">
-                Upload & Process STNK
-              </Typography>
-            </Box>
-          }
-        />
+        <CardHeader title={<Box className="flex items-center gap-2">
+          <i className="bi bi-cloud-upload-fill text-xl text-gray-600"></i>
+          <Typography variant="h6">Upload & Process STNK</Typography>
+        </Box>} />
         <Divider />
-        <CardContent className="p-6">
+        <CardContent>
           <Grid container direction="column" spacing={4}>
-            <Grid item xs={12}>
-              <Box
-                className={`
-                  border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
-                  ${selectedImage
-                    ? "border-blue-400 bg-blue-50"
-                    : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"}
-                `}
-              >
+            <Grid item>
+              <Box className="border-2 border-dashed rounded-lg p-8 text-center">
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageUpload}
+                  multiple
                   ref={fileInputRef}
+                  onChange={handleImageUpload}
                   className="hidden"
                   id="stnk-upload"
-                  disabled={isProcessing}
                 />
-                <label htmlFor="stnk-upload" className={`cursor-pointer ${isProcessing ? 'pointer-events-none' : ''}`}>
-                  <i className={`bi bi-image text-5xl mb-4 block ${selectedImage ? "text-blue-500" : "text-gray-400"}`}></i>
+                <label htmlFor="stnk-upload" className="cursor-pointer">
+                  <i className="bi bi-images text-5xl mb-4 block text-gray-400"></i>
                   <Typography variant="h6" className="mb-2 font-medium">
-                    {isProcessing ? "Memproses..." : selectedImage ? "File Terpilih" : "Pilih Gambar STNK"}
+                    Pilih Gambar STNK (max 10)
                   </Typography>
                   <Typography variant="body2" className="text-gray-500 mb-2">
-                    {isProcessing ? "Sedang memproses gambar STNK..." : selectedImage ? selectedImage.name : "Drag & drop atau klik untuk memilih file"}
+                    {selectedImages.length > 0 ? `${selectedImages.length} gambar dipilih` : "Klik atau drag file gambar"}
                   </Typography>
                   <Typography variant="caption" className="text-gray-400">
-                    Format: JPG, PNG, JPEG (Max: 5MB)
+                    Format: JPG, PNG, JPEG (Max 5MB)
                   </Typography>
                 </label>
-                {selectedImage && !isProcessing && (
-                  <Box className="mt-4">
-                    <Chip label="Siap Diproses" color="success" size="small" icon={<i className="bi bi-check-circle"></i>} />
-                  </Box>
-                )}
-                {isProcessing && (
-                  <Box className="mt-4">
-                    <CircularProgress size={24} />
-                  </Box>
-                )}
+                {isProcessing && <Box className="mt-4"><CircularProgress size={24} /></Box>}
               </Box>
             </Grid>
           </Grid>
-
-          <Box className="mt-6 flex flex-wrap gap-3 justify-center md:justify-start">
+          <Box className="mt-6 flex gap-3">
             <Button
               variant="contained"
-              color="success"
               onClick={openCamera}
-              disabled={isProcessing}
               startIcon={<i className="bi bi-camera"></i>}
-            >
-              Ambil Foto STNK
-            </Button>
-            {/* <Button
-              variant="contained"
-              onClick={handlePreview}
-              disabled={!selectedImage || isProcessing}
-              color="secondary"
-              startIcon={<i className="bi bi-eye"></i>}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              Preview
-            </Button> */}
+              disabled={isProcessing || selectedImages.length >= 10}
+            >Ambil Foto</Button>
             <Button
               variant="outlined"
               onClick={handleReset}
-              disabled={isProcessing}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2"
+              disabled={isProcessing || isSubmitting}
               startIcon={<i className="bi bi-arrow-clockwise"></i>}
-            >
-              Reset
-            </Button>
+            >Reset</Button>
           </Box>
         </CardContent>
       </Card>
-
-      {/* Preview Dialog */}
-      <Dialog open={previewDialog} onClose={() => setPreviewDialog(false)} maxWidth="md">
-        <DialogTitle className="bg-purple-50">
-          <Box className="flex items-center gap-2">
-            <i className="bi bi-eye text-purple-600"></i>
-            <Typography variant="h6" className="font-semibold">Preview Gambar STNK</Typography>
-          </Box>
-        </DialogTitle>
-        <Divider />
-        <DialogContent className="p-6">
-          {imagePreview && (
-            <Box className="w-full max-w-md mx-auto">
-              <img src={imagePreview} alt="STNK Preview" className="max-w-full max-h-96 object-contain rounded-lg shadow-md border" />
-              <Box className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <Typography variant="body2" className="text-gray-600"><strong>Nama File:</strong> {selectedImage?.name}</Typography>
-                <Typography variant="body2" className="text-gray-600"><strong>Ukuran:</strong> {(selectedImage?.size / 1024 / 1024).toFixed(2)} MB</Typography>
-                <Typography variant="body2" className="text-gray-600"><strong>Tipe:</strong> {selectedImage?.type}</Typography>
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <Divider />
-        <DialogActions className="p-4">
-          <Button onClick={() => setPreviewDialog(false)} className="text-gray-600">Tutup</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Result Dialog - Simplified and Fixed */}
-      <Dialog 
-        open={resultDialog} 
-        onClose={handleCancelResult} 
-        maxWidth="sm" 
-        fullWidth
-        disableEscapeKeyDown={isSubmitting}
-      >
-        <DialogTitle className="bg-green-50">
-          <Box className="flex items-center gap-2">
-            <i className="bi bi-check-circle text-green-600"></i>
-            <Typography variant="h6" className="font-semibold">Hasil Scan STNK</Typography>
-          </Box>
-        </DialogTitle>
-        <Divider />
-        <DialogContent className="p-6">
-          <Grid container spacing={4}>
-            {/* Image Preview */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" className="mb-3 font-medium text-gray-800">
-                Gambar STNK
-              </Typography>
-              {imagePreview && (
-                <Box className="text-center">
-                  <img 
-                    src={imagePreview} 
-                    alt="STNK" 
-                    className="max-w-full max-h-80 object-contain rounded-lg shadow-md border" 
-                  />
-                  <Typography variant="caption" className="text-gray-500 mt-2 block">
-                    {selectedImage?.name}
-                  </Typography>
-                </Box>
-              )}
-            </Grid>
-            
-            {/* Scan Result Display */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" className="mb-3 font-medium text-gray-800">
-                Nomor Rangka Terdeteksi
-              </Typography>
-              
-              <Box className="mb-4 p-4 bg-gray-50 rounded-lg border">
-                <Typography variant="body2" className="text-gray-600 mb-2">
-                  Hasil Scan:
-                </Typography>
-                <Typography variant="h6" className="font-mono text-lg text-gray-800">
-                  {scanResult?.nomor_rangka || "Tidak terdeteksi"}
-                </Typography>
-              </Box>
-              
-              {/* Correction Field */}
-              <Box className="mb-4">
-                <Typography variant="body2" className="text-gray-800 mb-2 font-medium">
-                  Nomor Rangka Final:
-                </Typography>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  value={correctedNumber}
-                  onChange={(e) => setCorrectedNumber(e.target.value)}
-                  placeholder="Masukkan nomor rangka yang benar"
-                  className="font-mono"
-                  helperText="Periksa dan koreksi nomor rangka jika diperlukan"
-                  disabled={isSubmitting}
-                  required
-                />
-              </Box>
-
-              {/* Show if corrected */}
-              {correctedNumber && correctedNumber !== (scanResult?.nomor_rangka || "") && (
-                <Box className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <Typography variant="body2" className="text-orange-800">
-                    <i className="bi bi-info-circle me-1"></i>
-                    Nomor rangka telah dikoreksi dari hasil scan
-                  </Typography>
-                </Box>
-              )}
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <Divider />
-        <DialogActions className="p-4">
-          <Button 
-            onClick={handleCancelResult} 
-            disabled={isSubmitting}
-            className="text-gray-600"
-          >
-            Batal
-          </Button>
-          <Button
-            onClick={handleFinalSubmit}
-            variant="contained"
-            disabled={isSubmitting || !correctedNumber.trim()}
-            className="bg-green-600 hover:bg-green-700"
-            startIcon={
-              isSubmitting ? 
-                <CircularProgress size={16} color="inherit" /> : 
-                <i className="bi bi-check-lg"></i>
-            }
-          >
-            {isSubmitting ? "Menyimpan..." : "Konfirmasi & Simpan"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Camera Dialog */}
       <Dialog open={cameraDialog} onClose={closeCamera} maxWidth="sm" fullWidth>
@@ -435,29 +299,217 @@ const STNKUpload = () => {
           </Box>
         </DialogTitle>
         <DialogContent className="relative p-0 bg-black">
-          <Box className="relative w-full h-[768px]">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full h-full object-cover"
-            />
-
-            {/* FRAME BANTU */}
+          <Box className="relative w-full h-[500px]">
+            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
             <Box className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <Box className="border-4 border-yellow-400 w-[250px] h-[450px] rounded-md" />
             </Box>
           </Box>
-
           <canvas ref={canvasRef} className="hidden" />
         </DialogContent>
-
         <DialogActions className="p-4">
           <Button onClick={closeCamera} color="error">Batal</Button>
-          <Button onClick={handleTakePhoto} variant="contained" className="bg-blue-600 hover:bg-blue-700">
-            Ambil Gambar
-          </Button>
+          <Button onClick={handleTakePhoto} variant="contained" className="bg-blue-600 hover:bg-blue-700">Ambil Gambar</Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Results Dialog with Expandable Cards - Simplified to show only nomor_rangka and jumlah */}
+      <Dialog open={resultDialog} onClose={handleResultDialogClose} maxWidth="lg" fullWidth>
+        <DialogTitle className="bg-green-50">
+          <Box className="flex items-center justify-between">
+            <Box className="flex items-center gap-2">
+              <i className="bi bi-check-circle text-green-600"></i>
+              <Typography variant="h6">Hasil Scan STNK</Typography>
+              <Badge badgeContent={scanResults.length} color="primary" />
+            </Box>
+            <Box className="flex gap-2">
+              <Button size="small" onClick={expandAll} startIcon={<i className="bi bi-arrows-expand"></i>}>
+                Buka Semua
+              </Button>
+              <Button size="small" onClick={collapseAll}>
+                Tutup Semua
+              </Button>
+            </Box>
+          </Box>
+        </DialogTitle>
+        <Divider />
+        <DialogContent className="p-0">
+          <Box className="max-h-[70vh] overflow-y-auto">
+            {scanResults.map((result, idx) => (
+              <Accordion 
+                key={idx}
+                expanded={expandedPanels.has(idx)}
+                onChange={handleAccordionChange(idx)}
+                className="border-b"
+              >
+                <AccordionSummary 
+                  expandIcon={<i className="bi bi-chevron-down"></i>} 
+                  className="bg-gray-50"
+                >
+                  <Box className="flex items-center justify-between w-full mr-4">
+                    <Box className="flex items-center gap-3">
+                      <Typography variant="subtitle1" className="font-medium">
+                        STNK #{idx + 1}
+                      </Typography>
+                      <Typography variant="body2" className="text-gray-600">
+                        {correctedNumbers[idx] || result.nomor_rangka || "Nomor tidak terdeteksi"}
+                      </Typography>
+                      <Typography variant="body2" className="text-blue-600">
+                        Qty: {correctedQuantities[idx] || result.details?.jumlah || 0}
+                      </Typography>
+                    </Box>
+                    <Box className="flex items-center gap-2">
+                      {getStatusChip(result, correctedNumbers[idx] || "", result.nomor_rangka || "")}
+                      <Chip 
+                        label={
+                          selectedImages[idx]
+                            ? `${(selectedImages[idx].size / 1024 / 1024).toFixed(1)}MB`
+                            : "0MB"
+                        }
+                        size="small" 
+                        variant="outlined"
+                        className="text-xs"
+                      />
+                    </Box>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails className="p-4">
+                  <Grid container spacing={3}>
+                    {/* Image Preview */}
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="subtitle2" className="mb-2 font-medium">
+                        Preview Gambar
+                      </Typography>
+                      {imagePreviews[idx] && (
+                        <Box className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+                          <img
+                            src={imagePreviews[idx]}
+                            alt={`STNK Preview ${idx + 1}`}
+                            className="w-full h-48 object-cover hover:opacity-90 transition-opacity"
+                            onClick={() => handleImageZoom(imagePreviews[idx], `STNK #${idx + 1}`)}
+                          />
+                          <Box className="p-2 bg-gray-50 flex items-center justify-center">
+                            <Typography variant="caption" className="text-gray-600 flex items-center gap-1">
+                              <i className="bi bi-zoom-in"></i>
+                              Klik untuk memperbesar
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+                    </Grid>
+
+                    {/* Form Fields - Simplified to only show nomor_rangka and jumlah */}
+                    <Grid item xs={12} md={8}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={8}>
+                          <TextField
+                            fullWidth
+                            label="Nomor Rangka *"
+                            variant="outlined"
+                            value={correctedNumbers[idx] || ""}
+                            onChange={(e) => {
+                              const updated = [...correctedNumbers];
+                              updated[idx] = e.target.value;
+                              setCorrectedNumbers(updated);
+                            }}
+                            error={!correctedNumbers[idx]?.trim()}
+                            helperText={!correctedNumbers[idx]?.trim() ? "Nomor rangka wajib diisi" : ""}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            fullWidth
+                            label="Jumlah"
+                            variant="outlined"
+                            type="number"
+                            value={correctedQuantities[idx] || ""}
+                            onChange={(e) => {
+                              const updated = [...correctedQuantities];
+                              updated[idx] = e.target.value;
+                              setCorrectedQuantities(updated);
+                            }}
+                            inputProps={{ min: 0 }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+          </Box>
+        </DialogContent>
+        <Divider />
+        <DialogActions className="p-4 bg-gray-50">
+          <Box className="flex items-center justify-between w-full">
+            <Typography variant="body2" className="text-gray-600">
+              {scanResults.length} STNK terdeteksi • {correctedNumbers.filter(n => n?.trim()).length} siap disimpan
+            </Typography>
+            <Box className="flex gap-2">
+              <Button onClick={handleResultDialogClose} disabled={isSubmitting}>
+                Tutup
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleFinalSubmit}
+                disabled={isSubmitting || correctedNumbers.some((n) => !n?.trim())}
+                startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <i className="bi bi-check-lg"></i>}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isSubmitting ? "Menyimpan..." : "Simpan Semua"}
+              </Button>
+            </Box>
+          </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* Image Zoom Dialog */}
+      <Dialog 
+        open={zoomDialog} 
+        onClose={closeZoom} 
+        maxWidth="lg" 
+        fullWidth
+        PaperProps={{
+          style: { backgroundColor: 'transparent', boxShadow: 'none' }
+        }}
+      >
+        <DialogContent className="p-0 bg-black/90 min-h-[90vh] flex items-center justify-center">
+          <Box className="relative w-full h-full flex flex-col items-center justify-center">
+            {/* Header with title and close button */}
+            <Box className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+              <Typography variant="h6" className="text-white font-medium">
+                {zoomedImage.title}
+              </Typography>
+              <IconButton 
+                onClick={closeZoom} 
+                className="text-white bg-black/50 hover:bg-black/70"
+                size="large"
+              >
+                <i className="bi bi-x-lg text-xl"></i>
+              </IconButton>
+            </Box>
+            
+            {/* Zoomed Image */}
+            <Box className="relative w-full h-full flex items-center justify-center p-8">
+              {zoomedImage.src && (
+                <img
+                  src={zoomedImage.src}
+                  alt={zoomedImage.title}
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                  style={{ maxHeight: '85vh' }}
+                />
+              )}
+            </Box>
+
+            {/* Instructions */}
+            <Box className="absolute bottom-4 left-4 right-4 text-center">
+              <Typography variant="body2" className="text-white/80">
+                <i className="bi bi-info-circle mr-2"></i>
+                Klik di luar gambar atau tombol ✕ untuk menutup
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
       </Dialog>
     </>
   );
