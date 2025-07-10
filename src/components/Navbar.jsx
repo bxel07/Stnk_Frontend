@@ -1,4 +1,30 @@
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { logout } from "@/slices/loginSlice";
+import Swal from "sweetalert2";
+
 function Navbar({ sidebarOpen, setSidebarOpen }) {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    Swal.fire({
+      title: "Yakin ingin logout?",
+      text: "Kamu akan keluar dari akun ini.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#2563eb", // biru
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, Logout"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(logout());
+        Swal.fire("Berhasil", "Kamu telah logout.", "success");
+        navigate("/");
+      }
+    });
+  };
+
   return (
     <nav className="fixed top-0 z-50 w-full bg-[#3F4E4F]">
       <div className="px-3 py-3 lg:px-5 lg:pl-3">
@@ -7,7 +33,7 @@ function Navbar({ sidebarOpen, setSidebarOpen }) {
             <button
               type="button"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 "
+              className="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200"
               aria-controls="sidebar"
               aria-expanded={sidebarOpen}
             >
@@ -48,6 +74,14 @@ function Navbar({ sidebarOpen, setSidebarOpen }) {
             <h1 className="font-semibold flex items-center ms-2 text-[#F2F2F2]">
               STNK Reader
             </h1>
+          </div>
+
+          <div className="flex items-center">
+            <button
+              onClick={handleLogout}
+              className="text-white bg-blue-600 hover:bg-primary-700 focus:ring-2 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 transition">
+              Logout
+            </button>
           </div>
         </div>
       </div>

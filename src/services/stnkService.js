@@ -17,7 +17,15 @@ export const uploadStnkBatch = (formData) =>
         },
     });
     
-export const saveStnkData = (data) => axios.post("/save-stnk-data/", data);
+    export const saveStnkData = (data) => {
+      const token = localStorage.getItem("token");
+      return axios.post("/save-stnk-data/", data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    };
+    
 export const getAllStnk = () => axios.get('/stnk-data/');
 export const getStnkById = (id) => axios.get(`/stnk/${id}`);
 export const getAllStnkCorrection = () => axios.get('/stnk-data/with-correction/');
@@ -30,3 +38,10 @@ export const getStnkListByDate = (date) => axios.get(`/stnk-data/by-created-date
 // Update nomor rangka dan jumlah langsung ke STNKData
 export const updateStnkInfo = (id, data) =>
   axios.put(`/stnk-data/${id}/update-info/`, data);
+
+  export const login = ({ username, password }) => {
+    return axios.post("http://localhost:8000/login", {
+      username, // ✅ sesuai dengan backend kamu
+      password,
+    });
+  };
