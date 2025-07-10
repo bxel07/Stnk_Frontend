@@ -1,12 +1,26 @@
 import { NavLink } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 function Sidebar({ sidebarOpen }) {
-  const menus = [
+  const user = useSelector((state) => state.auth.user);
+
+  const baseMenus = [
     { label: "Dashboard", icon: "bi bi-grid-fill", link: "/dashboard", type: "Umum" },
     { label: "Upload", icon: "bi bi-cloud-upload-fill", link: "/upload-stnk", type: "STNK" },
     { label: "Data Table", icon: "bi bi-card-list", link: "/data-stnk", type: "STNK" },
   ];
 
+  // Tambah menu "Tambah User" ke Umum jika admin/superadmin
+  if (user?.role === "admin" || user?.role === "superadmin") {
+    baseMenus.push({
+      label: "Registrasi Akun",
+      icon: "bi bi-person-plus",
+      link: "/admin/register",
+      type: "Umum",
+    });
+  }
+
+  const menus = baseMenus;
   const uniqueTypes = [...new Set(menus.map((item) => item.type))];
 
   const sidebarClasses = sidebarOpen
@@ -32,7 +46,7 @@ function Sidebar({ sidebarOpen }) {
                     key={`item-${typeIndex}-${itemIndex}`}
                     to={item.link}
                     className={({ isActive }) =>
-                      `flex items-center mb-1  p-2 text-[#F2F2F2] rounded hover:bg-[#393E46] group ${
+                      `flex items-center mb-1 p-2 text-[#F2F2F2] rounded hover:bg-[#393E46] group ${
                         isActive ? "bg-[#393E46] font-semibold" : ""
                       } ${sidebarOpen ? "justify-center" : ""}`
                     }

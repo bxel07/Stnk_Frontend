@@ -8,8 +8,12 @@ import {
   saveStnkData,
   getStnkListByDate,
   uploadStnkBatch,
-  updateStnkInfo
+  updateStnkInfo,
+
 } from "@/services/stnkService";
+
+import axios from "axios";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 
 // =============================================
@@ -288,6 +292,11 @@ const stnkSlice = createSlice({
         state.error = action.payload || 'Failed to process STNK batch';
         state.lastBatchResult = null;
       });
+      builder.addCase(deleteStnk.fulfilled, (state, action) => {
+        const id = action.payload;
+        state.list = state.list.filter(item => item.id !== id);
+      });
+      
   },
 });
 
@@ -303,3 +312,32 @@ export const {
 } = stnkSlice.actions;
 
 export default stnkSlice.reducer;
+
+// ==== Async Thunk untuk Login ====
+export const loginUser = createAsyncThunk(
+  "auth/loginUser",
+  async ({ username, password }, { rejectWithValue }) => {
+    try {
+      const response = await login({ username, password });
+      const { token, user } = response.data;
+
+      // Simpan ke localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      return { token, user };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Login gagal.");
+    }
+  }
+);
+
+
+export const deleteStnk = createAsyncThunk("stnk/delete", async (id, { rejectWithValue }) => {
+  try {
+    const response = await axios.delete(`${BASE_URL}/stnk/${id}`);
+    return id;
+  } catch (err) {
+    return rejectWithValue(err.response?.data || "Gagal menghapus data");
+  }
+});

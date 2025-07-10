@@ -38,6 +38,8 @@ import {
   MenuItem,
   Collapse
 } from "@mui/material";
+import Swal from "sweetalert2";
+
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
 
@@ -59,6 +61,7 @@ const STNKDataTable = () => {
   // State for correction form
   const [correctionForm, setCorrectionForm] = useState({
     nomor_rangka: '',
+    
   });
   
   // State for saving correction
@@ -233,6 +236,7 @@ const STNKDataTable = () => {
     // Initialize correction form with current data
     setCorrectionForm({
       nomor_rangka: record.nomor_rangka || '',
+      kode_samsat: record.kode_samsat || '',
     });
     setEditDialog(true);
   };
@@ -281,6 +285,28 @@ const STNKDataTable = () => {
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+  };
+
+  const handleDelete = async (row) => {
+    const confirm = await Swal.fire({
+      title: `Hapus data STNK?`,
+      text: `Data nomor rangka "${row.nomor_rangka}" akan dihapus permanen.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#aaa",
+    });
+  
+    if (confirm.isConfirmed) {
+      try {
+        await dispatch(deleteStnk(row.id)).unwrap();
+        toast.success("Data berhasil dihapus.");
+      } catch (err) {
+        toast.error(err.message || "Gagal menghapus data.");
+      }
+    }
   };
 
   // Render filter component
@@ -404,8 +430,9 @@ const STNKDataTable = () => {
     id: editRecord.id,
     data: {
       nomor_rangka: editRecord.nomor_rangka,
-      jumlah: editRecord.jumlah
-    }
+      jumlah: editRecord.jumlah,
+      kode_samsat: editRecord.kode_samsat // ✅ Tambahan
+    }    
   }))
     .unwrap()
     .then(() => {
@@ -476,6 +503,7 @@ const STNKDataTable = () => {
                         <TableCell className="bg-gray-100 font-bold text-gray-700">File</TableCell>
                         <TableCell className="bg-gray-100 font-bold text-gray-700">Nomor Rangka</TableCell>
                         <TableCell className="bg-gray-100 font-bold text-gray-700">Jumlah (Rp)</TableCell> {/* BARU */}
+                        <TableCell className="bg-gray-100 font-bold text-gray-700">Kode Samsat</TableCell> 
                         <TableCell className="bg-gray-100 font-bold text-gray-700">Tanggal Dibuat</TableCell>
                         <TableCell className="bg-gray-100 font-bold text-gray-700 text-center">Actions</TableCell>
                       </TableRow>
@@ -499,6 +527,7 @@ const STNKDataTable = () => {
                           <TableCell className="font-mono text-sm text-green-700 font-semibold"> {/* BARU */}
                             {formatRupiah(row.jumlah)}
                           </TableCell>
+                          <TableCell className="font-mono text-sm">{row.kode_samsat || "-"}</TableCell> {/* ✅ Tambahan */}
                           <TableCell className="text-sm">
                             {row.created_at
                               ? new Date(row.created_at).toLocaleString("id-ID", {
@@ -574,72 +603,127 @@ const STNKDataTable = () => {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
-            <DialogTitle className="bg-orange-50">
-              <Box className="flex justify-between items-center">
-                <Typography variant="h6" className="text-orange-800 font-semibold">Edit Data</Typography>
-                <IconButton onClick={handleCloseEditDialog}>
-                  <i className="bi bi-x-lg text-gray-600"></i>
-                </IconButton>
-              </Box>
-            </DialogTitle>
+          <Dialog 
+  open={editDialogOpen} 
+  onClose={handleCloseEditDialog} 
+  maxWidth="sm" 
+  fullWidth
+>
+  <DialogTitle className="bg-orange-50 px-6 py-4">
+    <Box className="flex justify-between items-center">
+      <Typography
+        variant="h6"
+        className="text-orange-800 font-semibold text-lg"
+      >
+        Edit Data
+      </Typography>
+      <IconButton
+        onClick={handleCloseEditDialog}
+        size="small"
+        className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-1"
+        aria-label="Close"
+      >
+        <i className="bi bi-x-lg text-xl"></i>
+      </IconButton>
+    </Box>
+  </DialogTitle>
 
-            <Divider />
+  <Divider />
 
-            <DialogContent className="px-6 pt-4 pb-2">
-              {editRecord && (
-                <Box className="space-y-5">
-                  {editRecord.image_url && (
-                    <Box className="text-center">
-                      <img
-                        src={`${BASE_URL}${editRecord.image_url}`}
-                        alt="Pratinjau"
-                        className="max-h-48 mx-auto rounded shadow cursor-zoom-in hover:opacity-80"
-                        onClick={() => handleZoomImage(`${BASE_URL}${editRecord.image_url}`)}
-                      />
-                    </Box>
-                  )}
+  <DialogContent className="px-6 py-6">
+    {editRecord && (
+      <Box className="space-y-6">
+        {/* Image Preview Section */}
+        {editRecord.image_url && (
+          <Box className="text-center">
+            <Box className="inline-block border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              <img
+                src={`${BASE_URL}${editRecord.image_url}`}
+                alt="Pratinjau"
+                className="max-h-48 w-auto cursor-zoom-in hover:opacity-90 transition-opacity"
+                onClick={() => handleZoomImage(`${BASE_URL}${editRecord.image_url}`)}
+              />
+            </Box>
+          </Box>
+        )}
 
-                  <TextField
-                    label="Nomor Rangka"
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    value={editRecord.nomor_rangka || ""}
-                    onChange={(e) =>
-                      setEditRecord({ ...editRecord, nomor_rangka: e.target.value })
-                    }
-                  />
+        {/* Form Fields */}
+        <Box className="space-y-4">
+          <TextField
+            label="Nomor Rangka"
+            fullWidth
+            variant="outlined"
+            size="small"
+            value={editRecord.nomor_rangka || ""}
+            onChange={(e) =>
+              setEditRecord({ ...editRecord, nomor_rangka: e.target.value })
+            }
+            className="bg-white"
+            InputProps={{
+              className: "rounded-lg"
+            }}
+          />
 
-                  <TextField
-                    label="Jumlah (Rp)"
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    type="number"
-                    value={editRecord.jumlah || ""}
-                    onChange={(e) =>
-                      setEditRecord({ ...editRecord, jumlah: parseInt(e.target.value) || 0 })
-                    }
-                  />
-                </Box>
-              )}
-            </DialogContent>
+          <TextField
+            label="Jumlah (Rp)"
+            fullWidth
+            variant="outlined"
+            size="small"
+            type="number"
+            value={editRecord.jumlah || ""}
+            onChange={(e) =>
+              setEditRecord({ 
+                ...editRecord, 
+                jumlah: parseInt(e.target.value) || 0 
+              })
+            }
+            className="bg-white"
+            InputProps={{
+              className: "rounded-lg",
+              inputProps: { min: 0 }
+            }}
+          />
 
-            <Divider />
+          <TextField
+            label="Kode Samsat"
+            fullWidth
+            variant="outlined"
+            size="small"
+            value={editRecord.kode_samsat || ""}
+            onChange={(e) =>
+              setEditRecord({ ...editRecord, kode_samsat: e.target.value })
+            }
+            className="bg-white"
+            InputProps={{
+              className: "rounded-lg"
+            }}
+          />
+        </Box>
+      </Box>
+    )}
+  </DialogContent>
 
-            <DialogActions className="p-4">
-              <Button onClick={handleCloseEditDialog} className="text-gray-600">
-                Batal
-              </Button>
-              <Button
-                onClick={handleEditSubmit}
-                className="bg-orange-600 text-white hover:bg-orange-700"
-              >
-                Simpan
-              </Button>
-            </DialogActions>
-          </Dialog>
+  <Divider />
+
+  <DialogActions className="px-6 py-4 bg-gray-50">
+    <Box className="flex gap-3 w-full justify-end">
+      <Button 
+        onClick={handleCloseEditDialog} 
+        variant="outlined"
+        className="text-gray-600 border-gray-300 hover:bg-gray-50 px-6 py-2 rounded-lg"
+      >
+        Batal
+      </Button>
+      <Button
+        onClick={handleEditSubmit}
+        variant="contained"
+        className="bg-orange-600 text-white hover:bg-orange-700 px-6 py-2 rounded-lg shadow-sm"
+      >
+        Simpan
+      </Button>
+    </Box>
+  </DialogActions>
+</Dialog>
 
 
         </>
@@ -712,104 +796,104 @@ const STNKDataTable = () => {
           </Box>
         </DialogTitle>
         <Divider />
-        <DialogContent className="p-6">
-          {selectedRecord && (
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Box className="space-y-4">
+<DialogContent className="p-6">
+  {selectedRecord && (
+    <Grid container spacing={3}>
+      <Grid item xs={12} sm={6}>
+        <Box className="space-y-4">
 
-                  {/* Gambar Preview dengan klik zoom */}
-                  {selectedRecord.image_url && (
-                    <>
-                      <Box className="text-center">
-                        <img
-                          src={`${BASE_URL}${selectedRecord.image_url}`}
-                          alt="Gambar STNK"
-                          className="max-h-64 mx-auto rounded shadow cursor-zoom-in hover:opacity-80"
-                          title="Klik untuk perbesar"
-                          onClick={() => handleZoomImage(`${BASE_URL}${selectedRecord.image_url}`)}
-                        />
-                      </Box>
-
-                      {/* Zoom Dialog */}
-                      <Dialog open={!!zoomImage} onClose={handleCloseZoom} maxWidth="md">
-                        <DialogTitle className="bg-gray-100">
-                          <Box className="flex justify-between items-center">
-                            <Typography variant="body1">Pratinjau Gambar</Typography>
-                            <IconButton onClick={handleCloseZoom}>
-                              <i className="bi bi-x-lg text-gray-600"></i>
-                            </IconButton>
-                          </Box>
-                        </DialogTitle>
-                        <Divider />
-                        <DialogContent className="flex justify-center items-center p-4">
-                          <img
-                            src={zoomImage}
-                            alt="Zoom"
-                            className="max-h-[80vh] w-auto rounded shadow"
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    </>
-                  )}
-
-                  {/* File */}
-                  <Box>
-                    <Typography variant="body2" className="text-gray-500 font-medium">
-                      File
-                    </Typography>
-                    <Typography variant="body1" className="font-mono">
-                      {selectedRecord.file || "-"}
-                    </Typography>
-                  </Box>
-
-                  {/* Nomor Rangka */}
-                  <Box>
-                    <Typography variant="body2" className="text-gray-500 font-medium">
-                      Nomor Rangka
-                    </Typography>
-                    <Typography variant="body1" className="font-mono">
-                      {selectedRecord.nomor_rangka || "-"}
-                    </Typography>
-                  </Box>
-
-                  {/* Jumlah */}
-                  <Box>
-                    <Typography variant="body2" className="text-gray-500 font-medium">
-                      Jumlah
-                    </Typography>
-                    <Typography variant="body1" className="font-mono text-green-700 font-semibold">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0
-                      }).format(selectedRecord.jumlah || 0)}
-                    </Typography>
-                  </Box>
-
-                  {/* Tanggal Dibuat */}
-                  <Box>
-                    <Typography variant="body2" className="text-gray-500 font-medium">
-                      Tanggal Dibuat
-                    </Typography>
-                    <Typography variant="body1" className="font-mono">
-                      {selectedRecord.created_at
-                        ? new Date(selectedRecord.created_at).toLocaleString('id-ID', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                          })
-                        : "-"}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Grid>
-            </Grid>
+          {/* Gambar Preview */}
+          {selectedRecord.image_url && (
+            <Box className="text-center">
+              <img
+                src={`${BASE_URL}${selectedRecord.image_url}`}
+                alt="Gambar STNK"
+                className="max-h-64 mx-auto rounded shadow cursor-zoom-in hover:opacity-80"
+                title="Klik untuk perbesar"
+                onClick={() => handleZoomImage(`${BASE_URL}${selectedRecord.image_url}`)}
+              />
+            </Box>
           )}
-        </DialogContent>
+
+          {/* Data Utama: Nomor Rangka, Jumlah, Kode Samsat */}
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <Box className="bg-gray-50 p-3 rounded-lg h-full">
+                <Typography variant="subtitle2" className="text-gray-500 font-medium mb-1">
+                  Nomor Rangka
+                </Typography>
+                <Typography variant="body1" className="font-mono break-all">
+                  {selectedRecord.nomor_rangka || "-"}
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Box className="bg-gray-50 p-3 rounded-lg h-full">
+                <Typography variant="subtitle2" className="text-gray-500 font-medium mb-1">
+                  Jumlah (Rp)
+                </Typography>
+                <Typography variant="body1" className="font-mono text-green-700 font-semibold">
+                  {new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                  }).format(selectedRecord.jumlah || 0)}
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Box className="bg-gray-50 p-3 rounded-lg">
+                <Typography variant="subtitle2" className="text-gray-500 font-medium mb-1">
+                  Kode Samsat
+                </Typography>
+                <Typography variant="body1" className="font-mono">
+                  {selectedRecord.kode_samsat || "-"}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+
+          {/* File & Tanggal */}
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <Box className="bg-gray-50 p-3 rounded-lg">
+                <Typography variant="subtitle2" className="text-gray-500 font-medium mb-1">
+                  File
+                </Typography>
+                <Typography variant="body1" className="font-mono break-all">
+                  {selectedRecord.file || "-"}
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Box className="bg-gray-50 p-3 rounded-lg">
+                <Typography variant="subtitle2" className="text-gray-500 font-medium mb-1">
+                  Tanggal Dibuat
+                </Typography>
+                <Typography variant="body1" className="font-mono">
+                  {selectedRecord.created_at
+                    ? new Date(selectedRecord.created_at).toLocaleString('id-ID', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : "-"}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+
+        </Box>
+      </Grid>
+    </Grid>
+  )}
+</DialogContent>
+
         <Divider />
         <DialogActions className="p-4">
           <Button
@@ -822,96 +906,105 @@ const STNKDataTable = () => {
       </Dialog>
 
 
-      {/* Edit Correction Dialog */}
-      <Dialog
-        open={editDialog}
-        onClose={() => setEditDialog(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle className="bg-green-50">
-          <Box className="flex items-center gap-2">
-            <i className="bi bi-pencil-square text-green-600"></i>
-            <Typography variant="h6" className="font-semibold">
-              Edit Koreksi Data STNK
-            </Typography>
-          </Box>
-        </DialogTitle>
-        <Divider />
-        <DialogContent className="p-6">
-          {selectedRecord && (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell className="font-semibold">Label</TableCell>
-                    <TableCell className="font-semibold">Data Asli</TableCell>
-                    <TableCell className="font-semibold">Koreksi</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                   {/* File */}
-                  <TableRow>
-                    <TableCell className="text-gray-500 font-medium">File</TableCell>
-                    <TableCell>
-                      <Typography variant="body1" className="font-mono">
-                        {selectedRecord.file || "-"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        fullWidth
-                        value={correctionForm.file}
-                        onChange={(e) => handleCorrectionFormChange('file', e.target.value)}
-                        placeholder="Masukkan nama file yang benar"
-                        size="small"
+      {/* Edit Dialog */}
+      <Dialog 
+          open={editDialogOpen} 
+          onClose={handleCloseEditDialog} 
+          maxWidth="sm" 
+          fullWidth
+        >
+          <DialogTitle className="bg-orange-50 px-6 py-4">
+            <Box className="flex justify-between items-center">
+              <Typography variant="h6" className="text-orange-800 font-semibold">
+                Edit Data STNK
+              </Typography>
+              <IconButton onClick={handleCloseEditDialog} size="small">
+                <i className="bi bi-x-lg"></i>
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <Divider />
+          <DialogContent className="px-6 py-4">
+            {editRecord && (
+              <Box className="space-y-4">
+                {editRecord.image_url && (
+                  <Box className="text-center mb-4">
+                    <Box className="inline-block border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                      <img
+                        src={`${BASE_URL}${editRecord.image_url}`}
+                        alt="Pratinjau"
+                        className="max-h-48 w-auto cursor-zoom-in hover:opacity-90"
+                        onClick={() => handleZoomImage(`${BASE_URL}${editRecord.image_url}`)}
                       />
-                    </TableCell>
-                  </TableRow>
+                    </Box>
+                  </Box>
+                )}
 
-                  {/* Nomor Rangka */}
-                  <TableRow>
-                    <TableCell className="text-gray-500 font-medium">Nomor Rangka</TableCell>
-                    <TableCell>
-                      <Typography variant="body1" className="font-mono">
-                        {selectedRecord.nomor_rangka || "-"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        fullWidth
-                        value={correctionForm.nomor_rangka}
-                        onChange={(e) => handleCorrectionFormChange('nomor_rangka', e.target.value)}
-                        placeholder="Masukkan nomor rangka yang benar"
-                        size="small"
-                      />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DialogContent>
-        <Divider />
-        <DialogActions className="p-4">
-          <Button
-            onClick={() => setEditDialog(false)}
-            className="text-gray-600"
-            disabled={savingCorrection}
-          >
-            Batal
-          </Button>
-          <Button
-            onClick={handleSaveCorrection}
-            variant="contained"
-            className="bg-green-600 hover:bg-green-700"
-            disabled={savingCorrection}
-            startIcon={savingCorrection ? <CircularProgress size={16} /> : <i className="bi bi-check-lg"></i>}
-          >
-            {savingCorrection ? 'Menyimpan...' : 'Simpan Koreksi'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                <Box className="space-y-4">
+                  <TextField
+                    label="Nomor Rangka"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    value={editRecord.nomor_rangka || ""}
+                    onChange={(e) =>
+                      setEditRecord({ ...editRecord, nomor_rangka: e.target.value })
+                    }
+                    margin="normal"
+                  />
+
+                  <TextField
+                    label="Jumlah (Rp)"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    type="number"
+                    value={editRecord.jumlah || ""}
+                    onChange={(e) =>
+                      setEditRecord({ 
+                        ...editRecord, 
+                        jumlah: parseInt(e.target.value) || 0 
+                      })
+                    }
+                    margin="normal"
+                    InputProps={{
+                      inputProps: { min: 0 }
+                    }}
+                  />
+
+                  <TextField
+                    label="Kode Samsat"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    value={editRecord.kode_samsat || ""}
+                    onChange={(e) =>
+                      setEditRecord({ ...editRecord, kode_samsat: e.target.value })
+                    }
+                    margin="normal"
+                  />
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <Divider />
+          <DialogActions className="px-6 py-3 bg-gray-50">
+            <Button 
+              onClick={handleCloseEditDialog} 
+              variant="outlined"
+              className="text-gray-600 border-gray-300"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              variant="contained"
+              className="bg-orange-600 text-white hover:bg-orange-700"
+            >
+              Simpan Perubahan
+            </Button>
+          </DialogActions>
+        </Dialog>
     </>
   );
 };

@@ -1,16 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDispatch } from "react-redux";
+import { setCredentials } from "@/slices/authSlice";
 import { Outlet } from 'react-router-dom';
-
-// Components
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
-
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (token && user) {
+      dispatch(setCredentials({ token, user }));
+    }
+  }, [dispatch]);
 
   return (
     <div className="flex h-screen bg-[#F2F2F2] overflow-hidden">
@@ -25,6 +32,5 @@ function App() {
     </div>
   );
 }
-
 
 export default App;
