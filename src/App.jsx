@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from "react-redux";
 import { setCredentials } from "@/slices/authSlice";
+import axios from 'axios';
 import { Outlet } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
@@ -13,11 +14,23 @@ function App() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user"));
+  
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem("user"));
+    } catch (err) {
+      console.warn("Gagal parse user dari localStorage:", err);
+      localStorage.removeItem("user"); // bersihkan kalau korup
+    }
+  
     if (token && user) {
       dispatch(setCredentials({ token, user }));
+      if (token) {
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      }
     }
   }, [dispatch]);
+  
 
   return (
     <div className="flex h-screen bg-[#F2F2F2] overflow-hidden">

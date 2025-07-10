@@ -161,18 +161,19 @@ const STNKUpload = () => {
         const finalData = {
           user_id: original.user_id || 1,
           glbm_samsat_id: original.glbm_samsat_id || 1,
-          file: original.path?.split("\\").pop(), // ✅ fix untuk backend
+          filename: original.path?.split("\\").pop(), // ✅ Tambahkan baris ini
+          file: original.path?.split("\\").pop(),
           path: original.path,
           nomor_rangka: correctedNumbers[i].trim(),
           kode_samsat: correctedSamsatCodes[i].trim(),
           jumlah: parseInt(correctedQuantities[i]) || 0,
+          
           corrected:
             correctedNumbers[i].trim() !== original.nomor_rangka ||
             (parseInt(correctedQuantities[i]) || 0) !== (original.jumlah || 0) ||
             correctedSamsatCodes[i].trim() !== (original.kode_samsat || ""),
         };
         
-
         console.log("Final data untuk simpan STNK:", finalData);
         await dispatch(saveStnk(finalData)).unwrap();
       }
