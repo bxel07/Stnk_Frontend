@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
-import { useDispatch } from "react-redux";
+import { useState, useRef, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import {
   Card, CardContent, CardHeader, Typography, Button, Grid, Box,
   Chip, CircularProgress, Alert, Divider
 } from "@mui/material";
+
 import {
   processStnkBatch,
   saveStnk
@@ -13,6 +14,8 @@ import {
 import CameraDialog from "@/components/STNKUpload/CameraDialog";
 import ResultDialog from "@/components/STNKUpload/ResultDialog";
 import ZoomDialog from "@/components/STNKUpload/ZoomDialog";
+
+import { getPTList, getBrandList } from "@/services/stnkService";
 
 // SweetAlert z-index fix
 if (!document.getElementById("swal-high-z-index-style")) {
@@ -24,6 +27,8 @@ if (!document.getElementById("swal-high-z-index-style")) {
 
 const STNKUpload = () => {
   const dispatch = useDispatch();
+  const userRole = useSelector((state) => state.auth.user?.role);
+  console.log("User Role:", userRole);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [scanResults, setScanResults] = useState([]);
@@ -39,9 +44,36 @@ const STNKUpload = () => {
   const [zoomedImage, setZoomedImage] = useState({ src: "", title: "" });
   const [error, setError] = useState(null);
 
+  const [ptList, setPtList] = useState([]);
+  const [brandList, setBrandList] = useState([]);
+  const [selectedPTs, setSelectedPTs] = useState([]);
+  const [selectedBrands, setSelectedBrands] = useState([]);
+
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const fetchLists = async () => {
+      try {
+        const [ptRes, brandRes] = await Promise.all([
+          getPTList(),
+          getBrandList(),
+          
+        ]);
+        console.log("PT List Response:", ptRes.data);
+console.log("Brand List Response:", brandRes.data);
+        setPtList(ptRes.data);
+        setBrandList(brandRes.data);
+      } catch (err) {
+        console.error("Gagal memuat PT/Brand:", err);
+      }
+    };
+
+    if (["cao", "admin", "superadmin"].includes(userRole)) {
+      fetchLists();
+    }
+  }, [userRole]);
 
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files).slice(0, 10 - selectedImages.length);
@@ -51,7 +83,6 @@ const STNKUpload = () => {
     files.forEach((file) => {
       if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) return;
       newImages.push(file);
-
       const reader = new FileReader();
       reader.onload = (e) => {
         newPreviews.push(e.target.result);
@@ -79,6 +110,8 @@ const STNKUpload = () => {
       setCorrectedNumbers(results.map(r => r.nomor_rangka || ""));
       setCorrectedQuantities(results.map(r => r.details?.jumlah?.toString() || "0"));
       setCorrectedSamsatCodes(results.map(r => r.kode_samsat || ""));
+      setSelectedPTs(results.map(() => ""));
+      setSelectedBrands(results.map(() => ""));
       setExpandedPanels(new Set([0]));
       setResultDialog(true);
     } catch (err) {
@@ -161,20 +194,20 @@ const STNKUpload = () => {
         const finalData = {
           user_id: original.user_id || 1,
           glbm_samsat_id: original.glbm_samsat_id || 1,
-          filename: original.path?.split("\\").pop(), // ✅ Tambahkan baris ini
+          filename: original.path?.split("\\").pop(),
           file: original.path?.split("\\").pop(),
           path: original.path,
           nomor_rangka: correctedNumbers[i].trim(),
           kode_samsat: correctedSamsatCodes[i].trim(),
           jumlah: parseInt(correctedQuantities[i]) || 0,
-          
+          pt_id: selectedPTs[i] || null,
+          brand_id: selectedBrands[i] || null,
           corrected:
             correctedNumbers[i].trim() !== original.nomor_rangka ||
             (parseInt(correctedQuantities[i]) || 0) !== (original.jumlah || 0) ||
             correctedSamsatCodes[i].trim() !== (original.kode_samsat || ""),
         };
-        
-        console.log("Final data untuk simpan STNK:", finalData);
+        console.log("Final STNK data to save:", finalData);
         await dispatch(saveStnk(finalData)).unwrap();
       }
 
@@ -210,6 +243,8 @@ const STNKUpload = () => {
     setCorrectedNumbers([]);
     setCorrectedQuantities([]);
     setCorrectedSamsatCodes([]);
+    setSelectedPTs([]);
+    setSelectedBrands([]);
     setExpandedPanels(new Set());
     setZoomDialog(false);
     setZoomedImage({ src: "", title: "" });
@@ -309,8 +344,19 @@ const STNKUpload = () => {
         expandAll={() => setExpandedPanels(new Set(scanResults.map((_, i) => i)))}
         collapseAll={() => setExpandedPanels(new Set())}
         getStatusChip={getStatusChip}
+        handleImageZoom={(src, title) => {
+          setZoomedImage({ src, title });
+          setZoomDialog(true);
+        }}
         handleSubmit={handleFinalSubmit}
         isSubmitting={isSubmitting}
+        userRole={userRole}
+        ptList={ptList?.data || []}
+        brandList={brandList?.data || []}
+        selectedPTs={selectedPTs}
+        setSelectedPTs={setSelectedPTs}
+        selectedBrands={selectedBrands}
+        setSelectedBrands={setSelectedBrands}
       />
 
       <ZoomDialog

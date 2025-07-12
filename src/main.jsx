@@ -18,6 +18,8 @@ import RegisterPage from "@/features/auth/pages/RegisterPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx"; // kita akan update ini
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import UserListPage from "@/pages/UserListPage";
+import ProfilePage from "@/pages/ProfilePage";
 
 
 
@@ -46,6 +48,8 @@ createRoot(document.getElementById("root")).render(
                 <RegisterPage />
               </ProtectedRoute>}
             />
+            <Route path="/admin/users" element={<ProtectedRoute><UserListPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           </Route>
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />

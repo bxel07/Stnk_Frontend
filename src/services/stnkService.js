@@ -30,6 +30,9 @@ export const getAllStnk = () => axios.get('/stnk-data/');
 export const getStnkById = (id) => axios.get(`/stnk/${id}`);
 export const getAllStnkCorrection = () => axios.get('/stnk-data/with-correction/');
 export const updateStnk = (id, data) => axios.put(`/stnk-data/${id}/correction/`, data);
+export const getPTList = () => axios.get("/glbm-pt");
+export const getBrandList = () => axios.get("/glbm-brand");
+
 
 // Add the new function
 export const getStnkListByDate = (date) => axios.get(`/stnk-data/by-created-date/?date=${date}`);
@@ -39,7 +42,7 @@ export const getStnkListByDate = (date) => axios.get(`/stnk-data/by-created-date
 export const updateStnkInfo = (id, data) =>
   axios.put(`/stnk-data/${id}/update-info/`, data);
 
-  export const login = ({ username, password }) => {
+export const login = ({ username, password }) => {
     return axios.post("http://localhost:8000/login", {
       username, // ✅ sesuai dengan backend kamu
       password,

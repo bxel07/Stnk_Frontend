@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from "react-redux";
 import { setCredentials } from "@/slices/authSlice";
-import axios from 'axios';
 import { Outlet } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
+import axios from 'axios';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 

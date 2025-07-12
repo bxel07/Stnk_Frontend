@@ -17,7 +17,6 @@ import {
 import {
   UserPlus,
   User,
-  Lock,
   Shield,
   Phone,
   Mail,
@@ -34,8 +33,7 @@ const RegisterPage = () => {
   const [form, setForm] = useState({
     username: "",
     gmail: "",
-    password: "",
-    role_id: "", // ID dari dropdown
+    role_id: "",
     nama_lengkap: "",
     nomor_telepon: "",
   });
@@ -50,10 +48,9 @@ const RegisterPage = () => {
   }
 
   useEffect(() => {
-    const token = localStorage.getItem("token"); // atau ambil dari redux jika kamu simpan di sana
-  
+    const token = localStorage.getItem("access_token");
     axios
-      .get("http://127.0.0.1:8000/api/roles", {
+      .get("http://127.0.0.1:8000/roles", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -64,7 +61,6 @@ const RegisterPage = () => {
         setRoles([]);
       });
   }, []);
-  
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -74,23 +70,23 @@ const RegisterPage = () => {
     e.preventDefault();
     setErrorMsg("");
     setLoading(true);
-  
+
     try {
-      const token = localStorage.getItem("token");  // pastikan token disimpan di localStorage saat login
-  
-      await axios.post(
-        "http://127.0.0.1:8000/api/register",
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-  
+      const token = localStorage.getItem("access_token");
+
+      const payload = {
+        ...form,
+        password: "12345678", // ✅ Set password default di sini
+      };
+
+      await axios.post("http://127.0.0.1:8000/api/register", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       Swal.fire("Berhasil", "Akun berhasil dibuat!", "success");
       navigate("/dashboard");
-  
     } catch (err) {
       const msg =
         err?.response?.data?.detail ||
@@ -100,7 +96,6 @@ const RegisterPage = () => {
       setLoading(false);
     }
   };
-  
 
   return (
     <Box sx={{ padding: { xs: 2, md: 4 } }}>
@@ -156,44 +151,33 @@ const RegisterPage = () => {
                 }}
               />
 
-              <TextField
-                fullWidth
-                required
-                margin="normal"
-                label="Password"
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={handleChange}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock size={18} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
               <FormControl fullWidth margin="normal" required>
                 <InputLabel id="role-label">Pilih Role</InputLabel>
                 <Select
-                  labelId="role-label"
-                  name="role_id"
-                  value={form.role_id}
-                  label="Pilih Role"
-                  onChange={handleChange}
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <Shield size={18} />
-                    </InputAdornment>
-                  }
-                >
-                  {roles.map((role) => (
-                    <MenuItem key={role.id} value={role.id}>
-                      {role.name}
-                    </MenuItem>
-                  ))}
-                </Select>
+  labelId="role-label"
+  name="role_id"
+  value={form.role_id}
+  label="Pilih Role"
+  onChange={handleChange}
+  startAdornment={
+    <InputAdornment position="start">
+      <Shield size={18} />
+    </InputAdornment>
+  }
+>
+  {roles
+    .filter((role) => {
+      // Jika user adalah admin, sembunyikan role superadmin
+      if (user.role === "admin") return role.name.toLowerCase() !== "superadmin";
+      return true; // Superadmin bisa lihat semua
+    })
+    .map((role) => (
+      <MenuItem key={role.id} value={role.id}>
+        {role.name}
+      </MenuItem>
+    ))}
+</Select>
+
               </FormControl>
 
               <TextField
