@@ -5,19 +5,30 @@ function Sidebar({ sidebarOpen }) {
   const user = useSelector((state) => state.auth.user);
 
   const baseMenus = [
+    // Menu Profil Saya - ditambahkan paling atas
+    { label: "Profil Saya", icon: "bi bi-person-circle", link: "/profile", type: "Umum" },
+
     { label: "Dashboard", icon: "bi bi-grid-fill", link: "/dashboard", type: "Umum" },
     { label: "Upload", icon: "bi bi-cloud-upload-fill", link: "/upload-stnk", type: "STNK" },
     { label: "Data Table", icon: "bi bi-card-list", link: "/data-stnk", type: "STNK" },
   ];
 
-  // Tambah menu "Tambah User" ke Umum jika admin/superadmin
+  // Tambahkan menu admin jika role admin/superadmin
   if (user?.role === "admin" || user?.role === "superadmin") {
-    baseMenus.push({
-      label: "Registrasi Akun",
-      icon: "bi bi-person-plus",
-      link: "/admin/register",
-      type: "Umum",
-    });
+    baseMenus.push(
+      {
+        label: "Registrasi Akun",
+        icon: "bi bi-person-plus",
+        link: "/admin/register",
+        type: "Umum",
+      },
+      {
+        label: "Daftar Akun",
+        icon: "bi bi-people-fill",
+        link: "/admin/users",
+        type: "Umum",
+      }
+    );
   }
 
   const menus = baseMenus;

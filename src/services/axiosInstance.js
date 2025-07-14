@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Buat instance Axios
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL + "/api", // pastikan /api ada kalau backend pakai itu
+  baseURL: import.meta.env.VITE_API_URL + "/api",// pastikan /api ada kalau backend pakai itu
   headers: {
     "Content-Type": "application/json",
   },
@@ -11,6 +11,7 @@ const axiosInstance = axios.create({
 // ✅ Interceptor: Tambahkan token JWT secara otomatis
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+  // console.log("TOKEN DIKIRIM:", token);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

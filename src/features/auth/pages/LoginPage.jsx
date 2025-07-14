@@ -12,8 +12,8 @@ import {
   Container
 } from "@mui/material";
 import { loginUser } from "@/slices/loginSlice";
+import { setCredentials } from "@/slices/authSlice"; // ✅ tambahkan ini
 import { toast } from "react-toastify";
-
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -30,30 +30,21 @@ function LoginPage() {
 
     try {
       const result = await dispatch(loginUser({ username, password })).unwrap();
-      const { user } = result;
+      const { token, user } = result;
 
-      await Swal.fire({
+      // ✅ simpan token dan user ke Redux + localStorage
+      dispatch(setCredentials({ token, user }));
+
+      Swal.fire({
         title: "Login Berhasil",
         text: `Selamat datang, ${user.username}!`,
         icon: "success",
-        confirmButtonColor: "#065f46",
-        confirmButtonText: "Lanjut"
+        timer: 1500,
+        showConfirmButton: false
       });
-
-      switch (user.role) {
-        case "orlap":
-        case "superadmin":
-          navigate("/dashboard");
-          break;
-        case "cao":
-          navigate("/dashboard");
-          break;
-        case "admin":
-          navigate("/dashboard");
-          break;
-        default:
-          setErrorMsg("Role tidak dikenali.");
-      }
+      
+      navigate("/dashboard");
+       // bebas disesuaikan role
     } catch (error) {
       setErrorMsg(error || "Login gagal.");
     } finally {

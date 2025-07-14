@@ -8,7 +8,8 @@ export const loginUser = createAsyncThunk(
       const response = await login({ username, password });
       const { access_token, user } = response.data;
 
-      localStorage.setItem("token", access_token);
+      // localStorage.setItem("token", access_token);
+      localStorage.setItem("access_token", access_token);
       localStorage.setItem("user", JSON.stringify(user));
 
       return { token: access_token, user }; // 🔥 FIXED

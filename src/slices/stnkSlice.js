@@ -25,13 +25,14 @@ export const fetchStnkList = createAsyncThunk(
   'stnk/fetchList',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await getAllStnk();
-      return response.data.data;
+      const response = await getAllStnk(); // <- ini axios call
+      return response.data.data; // Langsung kembalikan array-nya
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch STNK data');
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
 
 // -- Fetch STNK by Correction --
 export const fetchStnkListByCorrection = createAsyncThunk(
