@@ -1,31 +1,13 @@
+// src/pages/UserListPage.jsx
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import {
-  Typography,
-  Paper,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  CircularProgress,
-  Alert,
-  Card,
-  CardContent,
-  CardHeader,
-  Divider,
-  Chip,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
+  Typography, Paper, Box, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, CircularProgress, Alert, Card, CardContent, CardHeader,
+  Divider, Chip, TextField, InputAdornment, FormControl, InputLabel, Select,
+  MenuItem, Grid, Dialog, DialogTitle, DialogContent, DialogActions, Button
 } from "@mui/material";
 
 const UserListPage = () => {
@@ -38,17 +20,19 @@ const UserListPage = () => {
   const [roleFilter, setRoleFilter] = useState("all");
   const [ptList, setPtList] = useState([]);
   const [brandList, setBrandList] = useState([]);
+  const [roleList, setRoleList] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
 
   const token = localStorage.getItem("access_token");
   const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-  // Proteksi akses
   if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
     return <Navigate to="/dashboard" replace />;
   }
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUsers = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/users`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -58,33 +42,32 @@ const UserListPage = () => {
         setFilteredUsers(usersData);
         setError("");
       } catch (err) {
-        console.error("Fetch error:", err);
         setError("Gagal memuat daftar user");
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+
+    fetchUsers();
   }, []);
 
   useEffect(() => {
-    const fetchPTAndBrand = async () => {
+    const fetchLists = async () => {
       try {
-        const [ptRes, brandRes] = await Promise.all([
-          axios.get(`${BASE_URL}/glbm-pt`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`${BASE_URL}/glbm-brand`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+        const [ptRes, brandRes, roleRes] = await Promise.all([
+          axios.get(`${BASE_URL}/glbm-pt`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${BASE_URL}/glbm-brand`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${BASE_URL}/roles`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
         setPtList(ptRes.data.data || []);
         setBrandList(brandRes.data.data || []);
+        setRoleList(roleRes.data || []);
       } catch (err) {
-        console.error("Gagal fetch PT/Brand:", err);
+        console.error("Gagal fetch PT/Brand/Role:", err);
       }
     };
-    fetchPTAndBrand();
+
+    fetchLists();
   }, []);
 
   useEffect(() => {
@@ -101,97 +84,64 @@ const UserListPage = () => {
 
     if (roleFilter !== "all") {
       filtered = filtered.filter(
-        (user) =>
-          user.role?.role === roleFilter || user.role === roleFilter
+        (user) => user.role?.role === roleFilter || user.role === roleFilter
       );
     }
 
     setFilteredUsers(filtered);
   }, [users, searchQuery, roleFilter]);
 
-  const getPtName = (pt_id) => {
-    const pt = ptList.find((p) => p.id === pt_id);
-    return pt?.nama_pt || "-";
-  };
+  const getPtNameById = (pt_id) => ptList.find((pt) => pt.id === pt_id)?.nama_pt || "";
+  const getBrandNameById = (brand_id) => brandList.find((b) => b.id === brand_id)?.nama_brand || "";
 
-  const getBrandName = (brand_id) => {
-    const brand = brandList.find((b) => b.id === brand_id);
-    return brand?.nama_brand || "-";
-  };
+  const getPtNames = (otorisasi) =>
+    otorisasi?.map((o) => getPtNameById(o.pt_id)).filter(Boolean).join(", ") || "-";
+
+  const getBrandNames = (otorisasi) =>
+    otorisasi?.map((o) => getBrandNameById(o.brand_id)).filter(Boolean).join(", ") || "-";
 
   const getRoleColor = (role) => {
     switch (role) {
-      case "superadmin":
-        return "error";
-      case "admin":
-        return "warning";
-      case "user":
-        return "primary";
-      default:
-        return "default";
+      case "superadmin": return "error";
+      case "admin": return "warning";
+      case "user": return "primary";
+      default: return "default";
     }
   };
 
-  const getUniqueRoles = () => {
-    const roles = users.map(user => user.role?.role || user.role).filter(Boolean);
-    return [...new Set(roles)];
-  };
+  const getUniqueRoles = () => [...new Set(users.map(u => u.role?.role || u.role).filter(Boolean))];
 
   if (loading) {
     return (
       <Box className="flex justify-center items-center py-12">
         <CircularProgress size={40} />
-        <Typography variant="body1" className="ml-4 text-gray-600">
-          Memuat daftar Akun...
-        </Typography>
+        <Typography className="ml-4 text-gray-600">Memuat daftar Akun...</Typography>
       </Box>
     );
   }
 
   return (
     <Box className="space-y-6">
-      {error && (
-        <Alert severity="error" className="mb-4">
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error">{error}</Alert>}
 
-      {/* Filter Section */}
-      <Card className="shadow-sm">
-        <CardHeader
-          title={
-            <Box className="flex items-center gap-2">
-              <i className="bi bi-funnel text-xl text-gray-600"></i>
-              <Typography variant="h6" className="font-semibold">
-                Filter Akun
-              </Typography>
-            </Box>
-          }
-        />
+      <Card>
+        <CardHeader title="Filter Akun" />
         <Divider />
         <CardContent>
-          <Grid container spacing={3} alignItems="center">
+          <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <TextField
                 label="Cari Akun"
-                variant="outlined"
-                size="small"
-                fullWidth
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                fullWidth size="small"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <i className="bi bi-search text-gray-400"></i>
+                      <i className="bi bi-search text-gray-400" />
                     </InputAdornment>
-                  ),
-                  className: "rounded-lg",
-                }}
-                placeholder="Cari berdasarkan username, email, atau nama..."
-                className="bg-white"
-              />
+                  )}}/>
             </Grid>
-
             <Grid item xs={12} md={4}>
               <FormControl fullWidth size="small">
                 <InputLabel>Filter Role</InputLabel>
@@ -199,62 +149,27 @@ const UserListPage = () => {
                   value={roleFilter}
                   label="Filter Role"
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="bg-white rounded-lg"
                 >
                   <MenuItem value="all">Semua Role</MenuItem>
                   {getUniqueRoles().map((role) => (
-                    <MenuItem key={role} value={role}>
-                      {role}
-                    </MenuItem>
+                    <MenuItem key={role} value={role}>{role}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={2}>
-              <Box className="text-center">
-                <Typography variant="body2" className="text-gray-500">
-                  Total: {filteredUsers.length} Akun
-                </Typography>
-              </Box>
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {/* User Table */}
-      <Card className="shadow-md">
-        <CardHeader
-          title={
-            <Box className="flex items-center justify-between">
-              <Box className="flex items-center gap-2">
-                <i className="bi bi-people text-xl text-gray-600"></i>
-                <Typography variant="h6" className="font-semibold">
-                  Daftar Akun ({filteredUsers.length})
-                </Typography>
-              </Box>
-            </Box>
-          }
-        />
+      <Card>
+        <CardHeader title={`Daftar Akun (${filteredUsers.length})`} />
         <Divider />
         <CardContent className="p-0">
           {filteredUsers.length === 0 ? (
-            <Box className="text-center py-12">
-              <i className="bi bi-person-x text-6xl text-gray-300 mb-4 block"></i>
-              <Typography variant="h6" className="text-gray-500 mb-2">
-                {searchQuery || roleFilter !== "all"
-                  ? "Tidak ada Akun yang sesuai filter"
-                  : "Belum ada Akun"}
-              </Typography>
-              <Typography variant="body2" className="text-gray-400">
-                {searchQuery || roleFilter !== "all"
-                  ? "Coba ubah kriteria pencarian atau filter"
-                  : "Belum ada Akun yang terdaftar dalam sistem"}
-              </Typography>
-            </Box>
+            <Box className="text-center py-12 text-gray-500">Tidak ada Akun ditemukan.</Box>
           ) : (
-            <TableContainer component={Paper} className="max-h-96">
-              <Table stickyHeader>
+            <TableContainer component={Paper}>
+              <Table>
                 <TableHead>
                   <TableRow>
                     <TableCell>No</TableCell>
@@ -263,30 +178,29 @@ const UserListPage = () => {
                     <TableCell>Role</TableCell>
                     <TableCell>Brand</TableCell>
                     <TableCell>PT</TableCell>
-                    <TableCell className="text-center">Status</TableCell>
+                    <TableCell align="center">Status</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredUsers.map((userData, index) => (
-                    <TableRow key={userData.id || index} hover>
+                    <TableRow key={userData.id || index}>
                       <TableCell>{index + 1}</TableCell>
-                      <TableCell>{userData.username || "-"}</TableCell>
-                      <TableCell>{userData.email || userData.gmail || "-"}</TableCell>
+                      <TableCell>{userData.username}</TableCell>
+                      <TableCell>{userData.gmail || userData.email}</TableCell>
                       <TableCell>
                         <Chip
-                          label={userData.role?.role || userData.role || "-"}
+                          label={userData.role?.role || userData.role}
                           size="small"
                           color={getRoleColor(userData.role?.role || userData.role)}
                         />
                       </TableCell>
-                      <TableCell>{getBrandName(userData.brand_id)}</TableCell>
-                      <TableCell>{getPtName(userData.pt_id)}</TableCell>
+                      <TableCell>{getBrandNames(userData.otorisasi)}</TableCell>
+                      <TableCell>{getPtNames(userData.otorisasi)}</TableCell>
                       <TableCell align="center">
                         <Chip
                           label={userData.is_active !== false ? "Aktif" : "Nonaktif"}
                           size="small"
                           color={userData.is_active !== false ? "success" : "default"}
-                          variant="outlined"
                         />
                       </TableCell>
                     </TableRow>

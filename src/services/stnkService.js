@@ -21,10 +21,12 @@ export const uploadStnkBatch = (formData) =>
       const token = localStorage.getItem("token");
       return axios.post("/save-stnk-data/", data, {
         headers: {
+          "Content-Type": "application/json", // <-- WAJIB agar details.jumlah terbaca
           Authorization: `Bearer ${token}`,
         },
       });
     };
+    
     
 export const getAllStnk = () => axios.get('/stnk-data/');
 export const getStnkById = (id) => axios.get(`/stnk/${id}`);
@@ -47,4 +49,8 @@ export const login = ({ username, password }) => {
       username, // ✅ sesuai dengan backend kamu
       password,
     });
+  };
+
+  export const getSamsatList = () => {
+    return axios.get("/api/glbm-samsat"); // ganti endpoint ini sesuai backend kamu
   };

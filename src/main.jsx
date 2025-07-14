@@ -11,7 +11,7 @@ import App from "./App.jsx";
 import { store } from "@/store/index.js";
 // Features
 import Dashboard from "@/features/dashboard/pages/Dashboard.jsx";
-import STNKDataTable from "@/features/stnk/pages/STNKDataTable.jsx";
+// import STNKDataTable from "@/components/STNK/STNKDataTable.jsx";
 import STNKUpload from "@/features/stnk/pages/STNKUpload.jsx";
 import LoginPage from "@/features/auth/pages/LoginPage.jsx";
 import RegisterPage from "@/features/auth/pages/RegisterPage.jsx";
@@ -20,6 +20,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UserListPage from "@/pages/UserListPage";
 import ProfilePage from "@/pages/ProfilePage";
+import STNKDataTable from "./features/stnk/pages/STNKDataTable.jsx";
 
 
 

@@ -38,6 +38,7 @@ const STNKUploadForm = ({
               Format: JPG, PNG, JPEG (Max 5MB)
             </Typography>
           </label>
+
           {isProcessing && (
             <Box className="mt-4">
               <CircularProgress size={24} />
@@ -46,7 +47,27 @@ const STNKUploadForm = ({
         </Box>
       </Grid>
 
-      {/* Tambahkan input untuk kode_samsat dan jumlah */}
+      {/* Preview gambar */}
+      {selectedImages.length > 0 && (
+        <Grid item>
+          <Typography variant="subtitle1" className="mb-2 font-medium">
+            Preview Gambar:
+          </Typography>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+            {selectedImages.map((img, index) => (
+              <img
+                key={index}
+                src={URL.createObjectURL(img)}
+                alt={`preview-${index}`}
+                width={120}
+                style={{ borderRadius: 8, objectFit: "cover", height: 80 }}
+              />
+            ))}
+          </Box>
+        </Grid>
+      )}
+
+      {/* Input kode_samsat dan jumlah */}
       <Grid item>
         <TextField
           fullWidth
@@ -67,6 +88,7 @@ const STNKUploadForm = ({
         />
       </Grid>
 
+      {/* Tombol aksi */}
       <Box className="mt-6 flex gap-3">
         <Button
           variant="contained"

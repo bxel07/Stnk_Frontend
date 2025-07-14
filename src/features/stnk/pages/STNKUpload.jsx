@@ -48,6 +48,9 @@ const STNKUpload = () => {
   const [brandList, setBrandList] = useState([]);
   const [selectedPTs, setSelectedPTs] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
+  const authUser = useSelector((state) => state.auth.user);
+const defaultPtId = authUser?.pt_id || null;
+
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -110,7 +113,11 @@ console.log("Brand List Response:", brandRes.data);
       setCorrectedNumbers(results.map(r => r.nomor_rangka || ""));
       setCorrectedQuantities(results.map(r => r.details?.jumlah?.toString() || "0"));
       setCorrectedSamsatCodes(results.map(r => r.kode_samsat || ""));
-      setSelectedPTs(results.map(() => ""));
+     setSelectedPTs(results.map(() => {
+  if (["cao", "admin"].includes(userRole)) return defaultPtId;
+  return "";
+}));
+
       setSelectedBrands(results.map(() => ""));
       setExpandedPanels(new Set([0]));
       setResultDialog(true);
@@ -192,23 +199,34 @@ console.log("Brand List Response:", brandRes.data);
       for (let i = 0; i < scanResults.length; i++) {
         const original = scanResults[i];
         const finalData = {
-          user_id: original.user_id || 1,
+          user_id: authUser?.id,
           glbm_samsat_id: original.glbm_samsat_id || 1,
           filename: original.path?.split("\\").pop(),
           file: original.path?.split("\\").pop(),
           path: original.path,
           nomor_rangka: correctedNumbers[i].trim(),
           kode_samsat: correctedSamsatCodes[i].trim(),
-          jumlah: parseInt(correctedQuantities[i]) || 0,
+          details: {
+            jumlah: parseInt(correctedQuantities[i]) || 0
+          },
           pt_id: selectedPTs[i] || null,
           brand_id: selectedBrands[i] || null,
           corrected:
-            correctedNumbers[i].trim() !== original.nomor_rangka ||
-            (parseInt(correctedQuantities[i]) || 0) !== (original.jumlah || 0) ||
-            correctedSamsatCodes[i].trim() !== (original.kode_samsat || ""),
+          correctedNumbers[i].trim() !== original.nomor_rangka ||
+          (parseInt(correctedQuantities[i]) || 0) !== (original.jumlah || 0) ||
+          correctedSamsatCodes[i].trim() !== (original.kode_samsat || "")
         };
+        console.log("Brand terpilih index", i, ":", selectedBrands[i]);
+
+          
         console.log("Final STNK data to save:", finalData);
-        await dispatch(saveStnk(finalData)).unwrap();
+        console.log("selectedBrands", selectedBrands);
+        const result = await dispatch(saveStnk(finalData)).unwrap();
+        // console.log("Save success:", result);
+        console.log("Jumlah sebelum parse:", correctedQuantities[i]);
+        console.log("Jumlah setelah parse:", parseInt(correctedQuantities[i]));
+
+
       }
 
       await Swal.fire({
