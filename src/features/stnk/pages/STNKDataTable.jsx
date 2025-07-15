@@ -638,12 +638,15 @@ useEffect(() => {
               </DialogTitle>
               <Divider />
               <DialogContent className="flex justify-center items-center p-4">
-                <img
-                  src={zoomImage}
-                  alt="Zoom"
-                  className="max-h-[80vh] w-auto rounded shadow"
-                />
-              </DialogContent>
+        {zoomImage && (
+          <ProtectedImage
+            path={zoomImage}
+            alt="Zoom"
+            className="max-h-[80vh] w-auto rounded shadow"
+            onClick={handleCloseZoom}
+          />
+        )}
+      </DialogContent>
             </Dialog>
 
             <Dialog 

@@ -201,7 +201,9 @@ console.log("Brand List Response:", brandRes.data);
           path: original.path,
           nomor_rangka: correctedNumbers[i].trim(),
           kode_samsat: correctedSamsatCodes[i].trim(),
-          jumlah: parseInt(correctedQuantities[i]) || 0,
+          details: {
+            jumlah: parseInt(correctedQuantities[i]) || 0
+          },
           pt_id: selectedPTs[i] || null,
           brand_id: selectedBrands[i] || null,
           corrected:
@@ -209,6 +211,7 @@ console.log("Brand List Response:", brandRes.data);
             (parseInt(correctedQuantities[i]) || 0) !== (original.jumlah || 0) ||
             correctedSamsatCodes[i].trim() !== (original.kode_samsat || ""),
         };
+        
         console.log("Final STNK data to save:", finalData);
         await dispatch(saveStnk(finalData)).unwrap();
       }
