@@ -89,29 +89,43 @@ const RegisterPage = () => {
     e.preventDefault();
     setErrorMsg("");
     setLoading(true);
-
+  
     try {
       const token = localStorage.getItem("access_token");
       const roleName = getSelectedRoleName();
-
+  
       const payload = {
-        ...form,
+        username: form.username,
+        gmail: form.gmail,
         password: "12345678",
+        role_id: form.role_id,
+        nama_lengkap: form.nama_lengkap,
+        nomor_telepon: form.nomor_telepon,
+        glbm_samsat_id: parseInt(form.glbm_samsat_id),
       };
-
-      // Role-based logic
+  
+      // SUPERADMIN dan ADMIN kirim PT dan brand
+      if (roleName === "superadmin" || roleName === "admin") {
+        payload.glbm_pt_id = form.glbm_pt_ids[0] || null;
+        payload.glbm_brand_ids = form.glbm_brand_ids.length > 0 ? form.glbm_brand_ids : [];
+      }
+  
+      // CAO hanya kirim brand
       if (roleName === "cao") {
-        delete payload.glbm_pt_ids;
+        payload.glbm_pt_id = null;
+        payload.glbm_brand_ids = form.glbm_brand_ids.length > 0 ? form.glbm_brand_ids : [];
       }
+  
+      // USER tidak kirim pt/brand
       if (roleName === "user") {
-        delete payload.glbm_pt_ids;
-        delete payload.glbm_brand_ids;
+        payload.glbm_pt_id = null;
+        payload.glbm_brand_ids = [];
       }
-
+  
       await axios.post(`${baseUrl}/api/register`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+  
       Swal.fire("Berhasil", "Akun berhasil dibuat!", "success");
       navigate("/dashboard");
     } catch (err) {
@@ -123,6 +137,7 @@ const RegisterPage = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <Box sx={{ padding: { xs: 2, md: 4 } }}>

@@ -42,7 +42,7 @@ import Swal from "sweetalert2";
 import ProtectedImage from "@/components/ProtectedImage";
 
 
-const BASE_URL = import.meta.env.VITE_API_URL || "";
+const BASE_URL = import.meta.env.VITE_API_URL + "/api";
 
 
 const STNKDataTable = () => {
@@ -431,8 +431,6 @@ useEffect(() => {
     </Card>
   );
 
-  const BASE_URL = import.meta.env.VITE_API_URL;
-
   const [zoomImage, setZoomImage] = useState(null);
 
   const handleZoomImage = (imageUrl) => {
@@ -553,7 +551,7 @@ useEffect(() => {
                                   path={row.image_url} // cukup kirim path, bukan full URL
                                   alt="preview"
                                   className="h-12 rounded shadow cursor-zoom-in hover:opacity-80"
-                                  onClick={() => handleZoomImage(`${BASE_URL}${row.image_url}`)}
+                                  onClick={() => handleZoomImage(`${row.image_url}`)}
                                 />
                               ) : "-"}
                             </TableCell>
@@ -684,14 +682,15 @@ useEffect(() => {
             <Box className="text-center">
               <Box className="inline-block border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm">
                 <img
-                  src={`${BASE_URL}${editRecord.image_url}`}
+                  src={`${editRecord.image_url}`}
                   alt="Pratinjau"
                   className="max-h-48 w-auto cursor-zoom-in hover:opacity-90 transition-opacity"
-                  onClick={() => handleZoomImage(`${BASE_URL}${editRecord.image_url}`)}
+                  onClick={() => handleZoomImage(`${editRecord.image_url}`)}
                 />
               </Box>
             </Box>
           )}
+
 
           {/* Form Fields */}
           <Box className="space-y-4">
@@ -850,11 +849,11 @@ useEffect(() => {
             {selectedRecord.image_url && (
               <Box className="text-center">
                 <img
-                  src={`${BASE_URL}${selectedRecord.image_url}`}
+                  src={`${selectedRecord.image_url}`}
                   alt="Gambar STNK"
                   className="max-h-64 mx-auto rounded shadow cursor-zoom-in hover:opacity-80"
                   title="Klik untuk perbesar"
-                  onClick={() => handleZoomImage(`${BASE_URL}${selectedRecord.image_url}`)}
+                  onClick={() => handleZoomImage(`${selectedRecord.image_url}`)}
                 />
               </Box>
             )}
@@ -971,19 +970,12 @@ useEffect(() => {
             <DialogContent className="px-6 py-4">
               {editRecord && (
                 <Box className="space-y-4">
-                  {editRecord.image_url && (
-                    <Box className="text-center mb-4">
-                      <Box className="inline-block border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                        <img
-                          src={`${BASE_URL}${editRecord.image_url}`}
-                          alt="Pratinjau"
-                          className="max-h-48 w-auto cursor-zoom-in hover:opacity-90"
-                          onClick={() => handleZoomImage(`${BASE_URL}${editRecord.image_url}`)}
-                        />
-                      </Box>
-                    </Box>
-                  )}
-
+                  <img
+                src={`${BASE_URL}${editRecord.image_url}`}
+                alt="Pratinjau"
+                className="max-h-48 w-auto cursor-zoom-in hover:opacity-90"
+                onClick={() => handleZoomImage(`${editRecord.image_url}`)}
+              />
                   <Box className="space-y-4">
                     <TextField
                       label="Nomor Rangka"
