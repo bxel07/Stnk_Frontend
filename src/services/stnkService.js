@@ -44,12 +44,13 @@ export const getStnkListByDate = (date) => axios.get(`/stnk-data/by-created-date
 export const updateStnkInfo = (id, data) =>
   axios.put(`/stnk-data/${id}/update-info/`, data);
 
-export const login = ({ username, password }) => {
-    return axios.post("http://localhost:8000/login", {
-      username, // ✅ sesuai dengan backend kamu
+  export const login = ({ username, password }) => {
+    return axios.post(`${import.meta.env.VITE_API_URL}/login`, {
+      username,
       password,
     });
   };
+  
 
   export const getSamsatList = () => {
     return axios.get("/api/glbm-samsat"); // ganti endpoint ini sesuai backend kamu

@@ -4,12 +4,14 @@ import axios from "axios";
 const ProtectedImage = ({ path, alt, className, onClick }) => {
   const [imageSrc, setImageSrc] = useState("/loading.png");
 
+  // Ambil base URL dari environment variable VITE
+  const baseUrl = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
 
     axios
-      .get(`http://localhost:8000/api${path}`, 
-      {
+      .get(`${baseUrl}/api${path}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -23,7 +25,7 @@ const ProtectedImage = ({ path, alt, className, onClick }) => {
         console.error("Gagal ambil gambar:", err);
         setImageSrc("/no-image.png");
       });
-  }, [path]);
+  }, [path, baseUrl]);
 
   return (
     <img
