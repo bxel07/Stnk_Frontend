@@ -42,7 +42,7 @@ import Swal from "sweetalert2";
 import ProtectedImage from "@/components/ProtectedImage";
 
 
-const BASE_URL = import.meta.env.VITE_API_URL + "/api";
+const BASE_URL = import.meta.env.VITE_API_URL + "/api"|| "http://localhost:8000/api";
 
 
 const STNKDataTable = () => {
@@ -845,19 +845,17 @@ useEffect(() => {
         <Grid item xs={12} sm={6}>
           <Box className="space-y-4">
 
-            {/* Gambar Preview */}
-            {selectedRecord.image_url && (
-              <Box className="text-center">
-                <img
-                  src={`${selectedRecord.image_url}`}
-                  alt="Gambar STNK"
-                  className="max-h-64 mx-auto rounded shadow cursor-zoom-in hover:opacity-80"
-                  title="Klik untuk perbesar"
-                  onClick={() => handleZoomImage(`${selectedRecord.image_url}`)}
-                />
-              </Box>
-            )}
-
+           {/* Gambar Preview */}
+{selectedRecord?.image_url && (
+  <Box className="text-center">
+    <ProtectedImage
+  path={selectedRecord.image_url}
+  alt="Gambar STNK"
+  className="max-h-64 mx-auto rounded shadow cursor-zoom-in hover:opacity-80"
+  onClick={() => handleZoomImage(`${selectedRecord.image_url}`)}
+/>
+  </Box>
+)}
             {/* Data Utama: Nomor Rangka, Jumlah, Kode Samsat */}
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>

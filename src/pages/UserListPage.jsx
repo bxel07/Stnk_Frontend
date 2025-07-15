@@ -81,23 +81,23 @@ const UserListPage = () => {
   }, [users, searchQuery, roleFilter]);
 
   const getPtName = (ptData) => {
-    if (Array.isArray(ptData)) {
-      return ptData.map((id) => ptList.find((p) => p.id === id)?.nama_pt).filter(Boolean).join(", ");
-    } else {
-      const pt = ptList.find((p) => p.id === ptData);
-      return pt?.nama_pt || "-";
-    }
+    if (!ptData) return "-";
+    const ids = Array.isArray(ptData) ? ptData : [ptData];
+    return ids
+      .map((id) => ptList.find((p) => p.id === id)?.nama_pt)
+      .filter(Boolean)
+      .join(", ") || "-";
   };
-
+  
   const getBrandName = (brandData) => {
-    if (Array.isArray(brandData)) {
-      return brandData.map((id) => brandList.find((b) => b.id === id)?.nama_brand).filter(Boolean).join(", ");
-    } else {
-      const brand = brandList.find((b) => b.id === brandData);
-      return brand?.nama_brand || "-";
-    }
+    if (!brandData) return "-";
+    const ids = Array.isArray(brandData) ? brandData : [brandData];
+    return ids
+      .map((id) => brandList.find((b) => b.id === id)?.nama_brand)
+      .filter(Boolean)
+      .join(", ") || "-";
   };
-
+  
   const getRoleColor = (role) => {
     switch (role) {
       case "superadmin": return "error";
@@ -163,25 +163,35 @@ const UserListPage = () => {
               <TableCell>Role</TableCell>
               <TableCell>Brand</TableCell>
               <TableCell>PT</TableCell>
-              <TableCell>Status</TableCell>
               <TableCell>Aksi</TableCell>
             </TableRow></TableHead>
             <TableBody>
-              {filteredUsers.map((u, i) => (
-                <TableRow key={u.id}>
-                  <TableCell>{i + 1}</TableCell>
-                  <TableCell>{u.username}</TableCell>
-                  <TableCell>{u.email || u.gmail}</TableCell>
-                  <TableCell><Chip label={u.role?.role || u.role} color={getRoleColor(u.role?.role || u.role)} size="small" /></TableCell>
-                  <TableCell>{getBrandName(u.brand_ids || u.brand_id)}</TableCell>
-                  <TableCell>{getPtName(u.pt_ids || u.pt_id)}</TableCell>
-                  <TableCell><Chip label={u.is_active ? "Aktif" : "Nonaktif"} color={u.is_active ? "success" : "default"} variant="outlined" size="small" /></TableCell>
-                  <TableCell>
-                    <Button onClick={() => handleOpenModal(u)} size="small" variant="outlined">Edit</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+  {filteredUsers.map((u, i) => (
+    <TableRow key={u.id}>
+      <TableCell>{i + 1}</TableCell>
+      <TableCell>{u.username}</TableCell>
+      <TableCell>{u.email || u.gmail}</TableCell>
+      <TableCell>
+        <Chip
+          label={u.role?.role || u.role}
+          color={getRoleColor(u.role?.role || u.role)}
+          size="small"
+        />
+      </TableCell>
+      <TableCell>
+        {getBrandName(u.otorisasi?.map((o) => o.brand_id) || u.brand_id)}
+      </TableCell>
+      <TableCell>
+        {getPtName(u.otorisasi?.map((o) => o.pt_id) || u.pt_id)}
+      </TableCell>
+      <TableCell>
+        <Button onClick={() => handleOpenModal(u)} size="small" variant="outlined">
+          Edit
+        </Button>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
           </Table>
         </TableContainer>
       </CardContent></Card>
