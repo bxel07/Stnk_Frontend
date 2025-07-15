@@ -25,6 +25,7 @@ if (!document.getElementById("swal-high-z-index-style")) {
   document.head.appendChild(style);
 }
 
+
 const STNKUpload = () => {
   const dispatch = useDispatch();
   const userRole = useSelector((state) => state.auth.user?.role);
@@ -43,11 +44,12 @@ const STNKUpload = () => {
   const [zoomDialog, setZoomDialog] = useState(false);
   const [zoomedImage, setZoomedImage] = useState({ src: "", title: "" });
   const [error, setError] = useState(null);
-
+  const currentUserId = useSelector((state) => state.auth.user?.id);
   const [ptList, setPtList] = useState([]);
   const [brandList, setBrandList] = useState([]);
   const [selectedPTs, setSelectedPTs] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
+  
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -192,7 +194,7 @@ console.log("Brand List Response:", brandRes.data);
       for (let i = 0; i < scanResults.length; i++) {
         const original = scanResults[i];
         const finalData = {
-          user_id: original.user_id || 1,
+          user_id: original.user_id || currentUserId,
           glbm_samsat_id: original.glbm_samsat_id || 1,
           filename: original.path?.split("\\").pop(),
           file: original.path?.split("\\").pop(),
