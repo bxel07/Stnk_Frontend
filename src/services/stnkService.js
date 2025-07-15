@@ -1,5 +1,6 @@
 import axios from "@/services/axiosInstance";
 
+
 export const uploadStnk = (formData) =>
     axios.post("/upload-stnk/", formData, {
     headers: {
@@ -43,7 +44,7 @@ export const updateStnkInfo = (id, data) =>
   axios.put(`/stnk-data/${id}/update-info/`, data);
 
 export const login = ({ username, password }) => {
-    return axios.post("http://localhost:8000/login", {
+    return axios.post(`${baseUrl}/login`, {
       username, // ✅ sesuai dengan backend kamu
       password,
     });

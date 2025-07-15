@@ -26,6 +26,8 @@ import Swal from "sweetalert2";
 import axios from "axios";
 import { useSelector } from "react-redux";
 
+const baseUrl = import.meta.env.VITE_API_URL;
+
 const RegisterPage = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
@@ -36,34 +38,51 @@ const RegisterPage = () => {
     role_id: "",
     nama_lengkap: "",
     nomor_telepon: "",
+    glbm_pt_ids: [],
+    glbm_brand_ids: [],
+    glbm_samsat_id: "",
   });
 
   const [roles, setRoles] = useState([]);
+  const [ptList, setPtList] = useState([]);
+  const [brandList, setBrandList] = useState([]);
+  const [samsatList, setSamsatList] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ⛔️ Proteksi: hanya admin/superadmin yang bisa akses
-  if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
+  if (!user || (user.role !== "admin" && user.role !== "superadmin" && user.role !== "cao")) {
     return <Navigate to="/dashboard" replace />;
   }
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    axios
-      .get("http://127.0.0.1:8000/roles", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+
+    axios.get(`${baseUrl}/roles`, config)
       .then((res) => setRoles(res.data))
-      .catch((err) => {
-        console.error("Gagal mengambil roles:", err);
-        setRoles([]);
-      });
+      .catch(() => setRoles([]));
+
+    axios.get(`${baseUrl}/glbm-pt`, config)
+      .then((res) => setPtList(res.data.data || []))
+      .catch(() => setPtList([]));
+
+    axios.get(`${baseUrl}/glbm-brand`, config)
+      .then((res) => setBrandList(res.data.data || []))
+      .catch(() => setBrandList([]));
+
+    axios.get(`${baseUrl}/glbm-samsat`, config)
+      .then((res) => setSamsatList(res.data.data || []))
+      .catch(() => setSamsatList([]));
   }, []);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const getSelectedRoleName = () => {
+    const selectedRole = roles.find((r) => r.id === form.role_id);
+    return selectedRole?.name || "";
   };
 
   const handleSubmit = async (e) => {
@@ -73,16 +92,24 @@ const RegisterPage = () => {
 
     try {
       const token = localStorage.getItem("access_token");
+      const roleName = getSelectedRoleName();
 
       const payload = {
         ...form,
-        password: "12345678", // ✅ Set password default di sini
+        password: "12345678",
       };
 
-      await axios.post("http://127.0.0.1:8000/api/register", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // Role-based logic
+      if (roleName === "cao") {
+        delete payload.glbm_pt_ids;
+      }
+      if (roleName === "user") {
+        delete payload.glbm_pt_ids;
+        delete payload.glbm_brand_ids;
+      }
+
+      await axios.post(`${baseUrl}/api/register`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       Swal.fire("Berhasil", "Akun berhasil dibuat!", "success");
@@ -154,30 +181,28 @@ const RegisterPage = () => {
               <FormControl fullWidth margin="normal" required>
                 <InputLabel id="role-label">Pilih Role</InputLabel>
                 <Select
-  labelId="role-label"
-  name="role_id"
-  value={form.role_id}
-  label="Pilih Role"
-  onChange={handleChange}
-  startAdornment={
-    <InputAdornment position="start">
-      <Shield size={18} />
-    </InputAdornment>
-  }
->
-  {roles
-    .filter((role) => {
-      // Jika user adalah admin, sembunyikan role superadmin
-      if (user.role === "admin") return role.name.toLowerCase() !== "superadmin";
-      return true; // Superadmin bisa lihat semua
-    })
-    .map((role) => (
-      <MenuItem key={role.id} value={role.id}>
-        {role.name}
-      </MenuItem>
-    ))}
-</Select>
-
+                  labelId="role-label"
+                  name="role_id"
+                  value={form.role_id}
+                  label="Pilih Role"
+                  onChange={handleChange}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <Shield size={18} />
+                    </InputAdornment>
+                  }
+                >
+                  {roles
+                    .filter((role) => {
+                      if (user.role === "admin") return role.name !== "superadmin";
+                      return true;
+                    })
+                    .map((role) => (
+                      <MenuItem key={role.id} value={role.id}>
+                        {role.name}
+                      </MenuItem>
+                    ))}
+                </Select>
               </FormControl>
 
               <TextField
@@ -206,6 +231,69 @@ const RegisterPage = () => {
                   ),
                 }}
               />
+
+              {/* PT */}
+              {getSelectedRoleName() !== "cao" && getSelectedRoleName() !== "user" && (
+                <FormControl fullWidth margin="normal" required>
+                  <InputLabel id="pt-label">Pilih PT</InputLabel>
+                  <Select
+                    labelId="pt-label"
+                    name="glbm_pt_ids"
+                    multiple={getSelectedRoleName() === "superadmin"}
+                    value={form.glbm_pt_ids}
+                    label="Pilih PT"
+                    onChange={(e) =>
+                      setForm({ ...form, glbm_pt_ids: e.target.value })
+                    }
+                  >
+                    {ptList.map((pt) => (
+                      <MenuItem key={pt.id} value={pt.id}>
+                        {pt.nama_pt}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+
+              {/* Brand */}
+              {getSelectedRoleName() !== "user" && (
+                <FormControl fullWidth margin="normal" required>
+                  <InputLabel id="brand-label">Pilih Brand</InputLabel>
+                  <Select
+                    labelId="brand-label"
+                    name="glbm_brand_ids"
+                    multiple
+                    value={form.glbm_brand_ids}
+                    onChange={(e) =>
+                      setForm({ ...form, glbm_brand_ids: e.target.value })
+                    }
+                  >
+                    {brandList.map((brand) => (
+                      <MenuItem key={brand.id} value={brand.id}>
+                        {brand.nama_brand}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+
+              {/* Samsat */}
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="samsat-label">Pilih Samsat</InputLabel>
+                <Select
+                  labelId="samsat-label"
+                  name="glbm_samsat_id"
+                  value={form.glbm_samsat_id}
+                  label="Pilih Samsat"
+                  onChange={handleChange}
+                >
+                  {samsatList.map((s) => (
+                    <MenuItem key={s.id} value={s.id}>
+                      {s.nama_samsat} ({s.kode_samsat})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
               <Button
                 fullWidth

@@ -27,6 +27,7 @@ import {
   MenuItem,
   Grid,
 } from "@mui/material";
+import UserActionButton from "../components/UserActionButton";
 
 const UserListPage = () => {
   const user = useSelector((state) => state.auth.user);
@@ -40,9 +41,8 @@ const UserListPage = () => {
   const [brandList, setBrandList] = useState([]);
 
   const token = localStorage.getItem("access_token");
-  const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+  const BASE_URL = import.meta.env.VITE_API_URL;
 
-  // Proteksi akses
   if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -109,14 +109,28 @@ const UserListPage = () => {
     setFilteredUsers(filtered);
   }, [users, searchQuery, roleFilter]);
 
-  const getPtName = (pt_id) => {
-    const pt = ptList.find((p) => p.id === pt_id);
-    return pt?.nama_pt || "-";
+  const getPtName = (ptData) => {
+    if (Array.isArray(ptData)) {
+      return ptData
+        .map((id) => ptList.find((p) => p.id === id)?.nama_pt)
+        .filter(Boolean)
+        .join(", ");
+    } else {
+      const pt = ptList.find((p) => p.id === ptData);
+      return pt?.nama_pt || "-";
+    }
   };
 
-  const getBrandName = (brand_id) => {
-    const brand = brandList.find((b) => b.id === brand_id);
-    return brand?.nama_brand || "-";
+  const getBrandName = (brandData) => {
+    if (Array.isArray(brandData)) {
+      return brandData
+        .map((id) => brandList.find((b) => b.id === id)?.nama_brand)
+        .filter(Boolean)
+        .join(", ");
+    } else {
+      const brand = brandList.find((b) => b.id === brandData);
+      return brand?.nama_brand || "-";
+    }
   };
 
   const getRoleColor = (role) => {
@@ -156,7 +170,6 @@ const UserListPage = () => {
         </Alert>
       )}
 
-      {/* Filter Section */}
       <Card className="shadow-sm">
         <CardHeader
           title={
@@ -222,7 +235,6 @@ const UserListPage = () => {
         </CardContent>
       </Card>
 
-      {/* User Table */}
       <Card className="shadow-md">
         <CardHeader
           title={
@@ -264,6 +276,7 @@ const UserListPage = () => {
                     <TableCell>Brand</TableCell>
                     <TableCell>PT</TableCell>
                     <TableCell className="text-center">Status</TableCell>
+                    <TableCell>Aksi</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -279,8 +292,12 @@ const UserListPage = () => {
                           color={getRoleColor(userData.role?.role || userData.role)}
                         />
                       </TableCell>
-                      <TableCell>{getBrandName(userData.brand_id)}</TableCell>
-                      <TableCell>{getPtName(userData.pt_id)}</TableCell>
+                      <TableCell>
+                        {getBrandName(userData.brand_ids || userData.brand_id)}
+                      </TableCell>
+                      <TableCell>
+                        {getPtName(userData.pt_ids || userData.pt_id)}
+                      </TableCell>
                       <TableCell align="center">
                         <Chip
                           label={userData.is_active !== false ? "Aktif" : "Nonaktif"}
@@ -288,6 +305,9 @@ const UserListPage = () => {
                           color={userData.is_active !== false ? "success" : "default"}
                           variant="outlined"
                         />
+                      </TableCell>
+                      <TableCell>
+                        <UserActionButton userData={userData} />
                       </TableCell>
                     </TableRow>
                   ))}

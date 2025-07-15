@@ -39,6 +39,7 @@ import {
   Collapse
 } from "@mui/material";
 import Swal from "sweetalert2";
+import ProtectedImage from "@/components/ProtectedImage";
 
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -547,16 +548,15 @@ useEffect(() => {
                       {safeData.map((row) => (
                         <TableRow key={row.id} hover className="cursor-pointer">
                           <TableCell>
-                            {row.image_url ? (
-                              <img
-                                src={`${BASE_URL}${row.image_url}`}
-                                alt="preview"
-                                title="Klik untuk zoom"
-                                className="h-12 rounded shadow cursor-zoom-in hover:opacity-80"
-                                onClick={() => handleZoomImage(`${BASE_URL}${row.image_url}`)}
-                              />
-                            ) : "-"}
-                          </TableCell>
+                              {row.image_url ? (
+                                <ProtectedImage
+                                  path={row.image_url} // cukup kirim path, bukan full URL
+                                  alt="preview"
+                                  className="h-12 rounded shadow cursor-zoom-in hover:opacity-80"
+                                  onClick={() => handleZoomImage(`${BASE_URL}${row.image_url}`)}
+                                />
+                              ) : "-"}
+                            </TableCell>
                           <TableCell className="font-mono text-sm font-medium">{row.file || "-"}</TableCell>
                           <TableCell className="font-mono text-sm font-medium">{row.nomor_rangka || "-"}</TableCell>
                           <TableCell className="font-mono text-sm text-green-700 font-semibold"> {/* BARU */}

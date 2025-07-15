@@ -20,6 +20,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UserListPage from "@/pages/UserListPage";
 import ProfilePage from "@/pages/ProfilePage";
+import UserEditPage from "@/pages/UserEditPage";
 
 
 
@@ -50,6 +51,8 @@ createRoot(document.getElementById("root")).render(
             />
             <Route path="/admin/users" element={<ProtectedRoute><UserListPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/users/edit/:id" element={<UserEditPage />} />
+
           </Route>
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />
