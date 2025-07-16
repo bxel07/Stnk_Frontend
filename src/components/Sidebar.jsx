@@ -17,12 +17,6 @@ function Sidebar({ sidebarOpen }) {
   if (user?.role === "admin" || user?.role === "superadmin") {
     baseMenus.push(
       {
-        label: "Registrasi Akun",
-        icon: "bi bi-person-plus",
-        link: "/admin/register",
-        type: "Umum",
-      },
-      {
         label: "Daftar Akun",
         icon: "bi bi-people-fill",
         link: "/admin/users",

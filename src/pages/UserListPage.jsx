@@ -10,6 +10,8 @@ import {
   DialogActions, IconButton
 } from "@mui/material";
 import { Add, Delete } from "@mui/icons-material";
+import RegisterUserModal from "@/components/RegisterUserModal"; 
+
 
 const UserListPage = () => {
   const user = useSelector((state) => state.auth.user);
@@ -23,6 +25,7 @@ const UserListPage = () => {
   const [brandList, setBrandList] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [registerModalOpen, setRegisterModalOpen] = useState(false);
 
   const token = localStorage.getItem("access_token");
   const BASE_URL = import.meta.env.VITE_API_URL;
@@ -80,22 +83,34 @@ const UserListPage = () => {
     setFilteredUsers(filtered);
   }, [users, searchQuery, roleFilter]);
 
-  const getPtName = (ptData) => {
-    if (!ptData) return "-";
-    const ids = Array.isArray(ptData) ? ptData : [ptData];
-    return ids
-      .map((id) => ptList.find((p) => p.id === id)?.nama_pt)
+  const getBrandName = (brandIds) => {
+    if (!brandIds || brandList.length === 0) return "-";
+  
+    const result = brandIds
+      .map((id) => {
+        const brand = brandList.find((b) => b.id === id);
+        return brand?.nama_brand;
+      })
       .filter(Boolean)
-      .join(", ") || "-";
+      .join(", ");
+  
+    return result || "-";
   };
   
-  const getBrandName = (brandData) => {
-    if (!brandData) return "-";
-    const ids = Array.isArray(brandData) ? brandData : [brandData];
-    return ids
-      .map((id) => brandList.find((b) => b.id === id)?.nama_brand)
+  const getPtName = (ptData) => {
+    if (!ptData || ptList.length === 0) return "-";
+  
+    const ids = Array.isArray(ptData) ? ptData : [ptData];
+    const result = ids
+      .map((id) => {
+        const pt = ptList.find((p) => p.id === parseInt(id));
+        if (!pt) console.warn("PT tidak ditemukan untuk ID:", id);
+        return pt?.nama_pt;
+      })
       .filter(Boolean)
-      .join(", ") || "-";
+      .join(", ");
+  
+    return result || "-";
   };
   
   const getRoleColor = (role) => {
@@ -121,6 +136,7 @@ const UserListPage = () => {
     return [...new Set(users.map(user => user.role?.role || user.role).filter(Boolean))];
   };
 
+  
   if (loading) return (
     <Box className="flex justify-center items-center py-12">
       <CircularProgress size={40} />
@@ -153,7 +169,11 @@ const UserListPage = () => {
       </CardContent></Card>
 
       {/* Table */}
-      <Card><CardHeader title="Daftar Akun" /><Divider /><CardContent>
+      <Card><CardHeader
+  title={
+    <Box display="flex" justifyContent="space-between" alignItems="center">
+      <Typography variant="h6">Daftar Akun</Typography>
+      <Button variant="contained"startIcon={<Add />}onClick={() => setRegisterModalOpen(true)}>Tambah Akun</Button></Box>}/><Divider /><CardContent>
         <TableContainer component={Paper}>
           <Table stickyHeader>
             <TableHead><TableRow>
@@ -166,50 +186,70 @@ const UserListPage = () => {
               <TableCell>Aksi</TableCell>
             </TableRow></TableHead>
             <TableBody>
-  {filteredUsers.map((u, i) => (
-    <TableRow key={u.id}>
-      <TableCell>{i + 1}</TableCell>
-      <TableCell>{u.username}</TableCell>
-      <TableCell>{u.email || u.gmail}</TableCell>
-      <TableCell>
-        <Chip
-          label={u.role?.role || u.role}
-          color={getRoleColor(u.role?.role || u.role)}
-          size="small"
-        />
-      </TableCell>
-      <TableCell>
-        {getBrandName(u.otorisasi?.map((o) => o.brand_id) || u.brand_id)}
-      </TableCell>
-      <TableCell>
-        {getPtName(u.otorisasi?.map((o) => o.pt_id) || u.pt_id)}
-      </TableCell>
-      <TableCell>
-        <Button onClick={() => handleOpenModal(u)} size="small" variant="outlined">
-          Edit
-        </Button>
-      </TableCell>
-    </TableRow>
-  ))}
+  {filteredUsers.map((u, i) => {
+    // Debug log
+    const brandIds = u.otorisasi?.map((o) => o.brand_id) || [];
+    const ptIds = u.otorisasi?.map((o) => o.pt_id) || [];
+    console.log(`User: ${u.username}`, {
+      brandIds,
+      ptIds,
+      brandNames: getBrandName(brandIds),
+      ptNames: getPtName(ptIds)
+    });
+    console.log("User:", u.username);
+console.log("Otorisasi brand_id:", u.otorisasi?.map((o) => o.brand_id));
+console.log("Brand list:", brandList);
+console.log("Hasil getBrandName:", getBrandName(u.otorisasi?.map((o) => o.brand_id)));
+
+
+    return (
+      <TableRow key={u.id}>
+        <TableCell>{i + 1}</TableCell>
+        <TableCell>{u.username}</TableCell>
+        <TableCell>{u.email || u.gmail}</TableCell>
+        <TableCell>
+          <Chip
+            label={u.role?.role || u.role}
+            color={getRoleColor(u.role?.role || u.role)}
+            size="small"
+          />
+        </TableCell>
+        <TableCell>
+  {getBrandName(u.brand_ids)}
+</TableCell>
+
+<TableCell>
+  {getPtName(
+    Array.isArray(u.otorisasi) && u.otorisasi.length
+      ? u.otorisasi.map((o) => o.pt_id)
+      : u.pt_id
+  )}
+</TableCell>
+
+        <TableCell>
+          <Button onClick={() => handleOpenModal(u)} size="small" variant="outlined">
+            Edit
+          </Button>
+        </TableCell>
+      </TableRow>
+    );
+  })}
 </TableBody>
+
           </Table>
         </TableContainer>
       </CardContent></Card>
 
       {modalOpen && selectedUser && (
-        <EditUserModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          userId={selectedUser.id}
-          onSaved={handleSave}
-        />
+        <EditUserModal open={modalOpen}onClose={() => setModalOpen(false)}userId={selectedUser.id}onSaved={handleSave}/>
       )}
+      <RegisterUserModal open={registerModalOpen}onClose={() => setRegisterModalOpen(false)}onSuccess={fetchUsers}/>
     </Box>
   );
 };
 
 const EditUserModal = ({ open, onClose, userId, onSaved }) => {
-  const BASE_URL = import.meta.env.VITE_API_URL;
+  const BASE_URL = import.meta.env.VITE_API_URL + "/api";
   const token = localStorage.getItem("access_token");
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -236,7 +276,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
           axios.get(`${BASE_URL}/roles`, config),
           axios.get(`${BASE_URL}/glbm-pt`, config),
           axios.get(`${BASE_URL}/glbm-brand`, config),
-          axios.get(`${BASE_URL}/users`, config), // Ganti dari update-user/{id}
+          axios.get(`${BASE_URL}/users`, config),
         ]);
   
         setRoles(roleRes.data);
@@ -251,14 +291,23 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
           return;
         }
   
+        // Atur jumlah otorisasi sesuai jumlah detail dari backend
+        const originalOtorisasi = u.otorisasi || [];
+  
         setForm({
           username: u.username || "",
           gmail: u.gmail || "",
           role_id: u.role_id || "",
-  
-          // Sesuaikan jika otorisasi tidak tersedia
-          otorisasi: (u.otorisasi || [{ pt_id: u.pt_id || "", brand_id: u.brand_id || "" }]),
+          otorisasi: originalOtorisasi.length > 0
+            ? originalOtorisasi.map((o) => ({
+              pt_id: o.pt_id,
+              brand_id: o.brand_id,
+            }))            
+            : [{ pt_id: u.pt_id || "", brand_id: u.brand_id || "" }],
         });
+  
+        console.log("Data otorisasi user:", originalOtorisasi);
+
   
         setErrorMsg("");
       } catch (err) {
@@ -282,22 +331,21 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
     setForm({ ...form, otorisasi: newOtorisasi });
   };
 
-  const handleAddOtorisasi = () => {
-    setForm((prev) => ({
-      ...prev,
-      otorisasi: [...prev.otorisasi, { pt_id: "", brand_id: "" }],
-    }));
-  };
-
-  const handleRemoveOtorisasi = (i) => {
-    const updated = [...form.otorisasi];
-    updated.splice(i, 1);
-    setForm({ ...form, otorisasi: updated });
-  };
-
   const handleSubmit = async () => {
     try {
-      await axios.put(`${BASE_URL}/update-user/${userId}`, form, config);
+      const payload = {
+        username: form.username,
+        gmail: form.gmail,
+        role_id: parseInt(form.role_id), // pastikan angka
+        otorisasi: form.otorisasi.map((o) => ({
+          pt_id: o.pt_id ? parseInt(o.pt_id) : null, // ubah string ke int, atau null
+          brand_id: o.brand_id ? parseInt(o.brand_id) : null,
+        })),
+      };
+      
+      console.log("Payload yang dikirim:", payload);
+      
+      await axios.put(`${BASE_URL}/update-user/${userId}`, payload, config);
       onSaved();
       onClose();
     } catch (err) {
@@ -328,7 +376,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
             <Typography mt={3} mb={1} fontWeight={600}>Otorisasi PT & Brand</Typography>
             {form.otorisasi.map((otor, i) => (
               <Grid container spacing={2} alignItems="center" key={i}>
-                <Grid item xs={5}>
+                <Grid item xs={6}>
                   <FormControl fullWidth margin="dense">
                     <InputLabel>PT</InputLabel>
                     <Select
@@ -342,7 +390,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={5}>
+                <Grid item xs={6}>
                   <FormControl fullWidth margin="dense">
                     <InputLabel>Brand</InputLabel>
                     <Select
@@ -356,16 +404,8 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={2}>
-                  <IconButton color="error" onClick={() => handleRemoveOtorisasi(i)} disabled={form.otorisasi.length === 1}>
-                    <Delete />
-                  </IconButton>
-                </Grid>
               </Grid>
             ))}
-            <Button startIcon={<Add />} onClick={handleAddOtorisasi} size="small" sx={{ mt: 1 }}>
-              Tambah Otorisasi
-            </Button>
           </>
         )}
       </DialogContent>

@@ -118,25 +118,32 @@ useEffect(() => {
   }
 
   // ✅ Filter berdasarkan tanggal
-  if (dateFilter.filterType === "today") {
-    const todayStr = new Date().toISOString().split("T")[0];
-    filtered = filtered.filter(item => {
-      const created = new Date(item.created_at).toISOString().split("T")[0];
-      return created === todayStr;
-    });
-  } else if (
-    dateFilter.filterType === "range" &&
-    dateFilter.startDate &&
-    dateFilter.endDate
-  ) {
-    const start = new Date(dateFilter.startDate);
-    const end = new Date(dateFilter.endDate);
+if (dateFilter.filterType === "today") {
+  const todayStr = new Date().toISOString().split("T")[0];
+  filtered = filtered.filter(item => {
+    const created = new Date(item.created_at).toISOString().split("T")[0];
+    return created === todayStr;
+  });
+} else if (dateFilter.filterType === "yesterday") {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  filtered = filtered.filter(item => {
+    const created = new Date(item.created_at).toISOString().split("T")[0];
+    return created === yesterdayStr;
+  });
+} else if (
+  dateFilter.filterType === "custom" &&
+  dateFilter.selectedDate
+) {
+  const selectedDateStr = new Date(dateFilter.selectedDate).toISOString().split("T")[0];
+  filtered = filtered.filter(item => {
+    const createdDateStr = new Date(item.created_at).toISOString().split("T")[0];
+    return createdDateStr === selectedDateStr;
+  });
+}
 
-    filtered = filtered.filter(item => {
-      const created = new Date(item.created_at);
-      return created >= start && created <= end;
-    });
-  }
+  
 
   setFilteredData(filtered);
 }, [stnkData, kodeSamsatFilter, ptFilter, brandFilter, dateFilter]);
@@ -217,7 +224,7 @@ useEffect(() => {
     // Initialize correction form with current data
     setCorrectionForm({
       nomor_rangka: record.nomor_rangka || '',
-      kode_samsat: record.kode_samsat || '',
+      // kode_samsat: record.kode_samsat || '',
     });
     setEditDialog(true);
   };
@@ -268,28 +275,6 @@ useEffect(() => {
     setActiveTab(newValue);
   };
 
-  const handleDelete = async (row) => {
-    const confirm = await Swal.fire({
-      title: `Hapus data STNK?`,
-      text: `Data nomor rangka "${row.nomor_rangka}" akan dihapus permanen.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Ya, hapus",
-      cancelButtonText: "Batal",
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#aaa",
-    });
-  
-    if (confirm.isConfirmed) {
-      try {
-        await dispatch(deleteStnk(row.id)).unwrap();
-        toast.success("Data berhasil dihapus.");
-      } catch (err) {
-        toast.error(err.message || "Gagal menghapus data.");
-      }
-    }
-  };
-
   // Render filter component
   const renderFilter = () => (
     <Card className="shadow-sm mb-4">
@@ -301,20 +286,19 @@ useEffect(() => {
               <Typography variant="h6" className="font-semibold">
                 Filter Data
               </Typography>
-           
-{getFilterLabel() && (
-  <Box className="flex flex-wrap gap-1 ml-2">
-    {getFilterLabel().split(' • ').map((label, index) => (
-      <Chip 
-        key={index}
-        label={label} 
-        size="small" 
-        color="primary" 
-        onDelete={clearFilter}
-      />
-    ))}
-  </Box>
-)}
+              {getFilterLabel() && (
+                <Box className="flex flex-wrap gap-1 ml-2">
+                  {getFilterLabel().split(' • ').map((label, index) => (
+                    <Chip 
+                      key={index}
+                      label={label} 
+                      size="small" 
+                      color="primary" 
+                      onDelete={clearFilter}
+                    />
+                  ))}
+                </Box>
+              )}
               {dateFilterLoading && (
                 <CircularProgress size={16} />
               )}
@@ -348,41 +332,46 @@ useEffect(() => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={4} sm={6}>
-  <FormControl fullWidth size="small">
-    <InputLabel>Filter PT</InputLabel>
-    <Select
-      value={ptFilter}
-      label="Filter PT"
-      onChange={(e) => setPTFilter(e.target.value)}
-    >
-      <MenuItem value="">Semua PT</MenuItem>
-      {uniquePT.map((pt, index) => (
-        <MenuItem key={index} value={pt}>
-          {pt}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-</Grid>
+            {(userRole === "admin" || userRole === "superadmin") && (
+  <Grid item xs={12} sm={4}>
+    <FormControl fullWidth size="small">
+      <InputLabel>Filter PT</InputLabel>
+      <Select
+        value={ptFilter}
+        label="Filter PT"
+        onChange={(e) => setPTFilter(e.target.value)}
+      >
+        <MenuItem value="">Semua PT</MenuItem>
+        {uniquePT.map((pt, index) => (
+          <MenuItem key={index} value={pt}>
+            {pt}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  </Grid>
+)}
 
-<Grid item xs={12} sm={4}>
-  <FormControl fullWidth size="small">
-    <InputLabel>Filter Brand</InputLabel>
-    <Select
-      value={brandFilter}
-      label="Filter Brand"
-      onChange={(e) => setBrandFilter(e.target.value)}
-    >
-      <MenuItem value="">Semua Brand</MenuItem>
-      {uniqueBrand.map((brand, index) => (
-        <MenuItem key={index} value={brand}>
-          {brand}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-</Grid>
+
+{(userRole === "admin" || userRole === "superadmin" || userRole === "cao") && (
+  <Grid item xs={12} sm={4}>
+    <FormControl fullWidth size="small">
+      <InputLabel>Filter Brand</InputLabel>
+      <Select
+        value={brandFilter}
+        label="Filter Brand"
+        onChange={(e) => setBrandFilter(e.target.value)}
+      >
+        <MenuItem value="">Semua Brand</MenuItem>
+        {uniqueBrand.map((brand, index) => (
+          <MenuItem key={index} value={brand}>
+            {brand}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  </Grid>
+)}
 
             
             {dateFilter.filterType === 'custom' && (
@@ -400,19 +389,26 @@ useEffect(() => {
                 />
               </Grid>
             )}
-            <Grid item xs={12} sm={1000}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Filter Kode Samsat</InputLabel>
-                <Select value={kodeSamsatFilter} label="Filter Kode Samsat"onChange={(e) => setKodeSamsatFilter(e.target.value)}>
-                  <MenuItem value="">Semua Kode Samsat</MenuItem>
-                  {uniqueKodeSamsat.map((kode) => (
-                    <MenuItem key={kode} value={kode}>
-                      {kode}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+            {(userRole === "admin" || userRole === "superadmin") && (
+  <Grid item xs={12} sm={4}>
+    <FormControl fullWidth size="small">
+      <InputLabel>Filter Kode Samsat</InputLabel>
+      <Select
+        value={kodeSamsatFilter}
+        label="Filter Kode Samsat"
+        onChange={(e) => setKodeSamsatFilter(e.target.value)}
+      >
+        <MenuItem value="">Semua Kode Samsat</MenuItem>
+        {uniqueKodeSamsat.map((kode) => (
+          <MenuItem key={kode} value={kode}>
+            {kode}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  </Grid>
+)}
+
             <Grid item xs={12} sm={4}>
               <Button
                 onClick={clearFilter}
@@ -968,12 +964,12 @@ useEffect(() => {
             <DialogContent className="px-6 py-4">
               {editRecord && (
                 <Box className="space-y-4">
-                  <img
-                src={`${BASE_URL}${editRecord.image_url}`}
-                alt="Pratinjau"
-                className="max-h-48 w-auto cursor-zoom-in hover:opacity-90"
-                onClick={() => handleZoomImage(`${editRecord.image_url}`)}
-              />
+                  <ProtectedImage
+                    path={editRecord.image_url} // Tidak perlu BASE_URL, karena sudah di-handle di dalam komponen
+                    alt="Pratinjau"
+                    className="max-h-48 w-auto cursor-zoom-in hover:opacity-90"
+                    onClick={() => handleZoomImage(editRecord.image_url)}
+                  />
                   <Box className="space-y-4">
                     <TextField
                       label="Nomor Rangka"
@@ -1006,7 +1002,7 @@ useEffect(() => {
                       }}
                     />
 
-                    <TextField
+                    {/* <TextField
                       label="Kode Samsat"
                       fullWidth
                       variant="outlined"
@@ -1016,7 +1012,7 @@ useEffect(() => {
                         setEditRecord({ ...editRecord, kode_samsat: e.target.value })
                       }
                       margin="normal"
-                    />
+                    /> */}
                   </Box>
                 </Box>
               )}

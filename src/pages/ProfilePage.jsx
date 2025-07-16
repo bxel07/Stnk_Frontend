@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Modal,
   TextField,
+  Alert,
 } from "@mui/material";
 import axios from "@/services/axiosInstance";
 import { toast } from "react-toastify";
@@ -19,10 +20,9 @@ function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editData, setEditData] = useState({});
-  const [saving, setSaving] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -32,53 +32,39 @@ function ProfilePage() {
     axios
       .get("/user-profile")
       .then((res) => {
+        console.log("✅ Data Profil:", res.data); // Log data profil
         setProfile(res.data);
-        setEditData(res.data);
       })
       .catch(() => toast.error("Gagal memuat profil"))
       .finally(() => setLoading(false));
   };
 
   const handleSave = async () => {
-    const payload = {};
-
-    if (editData.username && editData.username !== profile.username)
-      payload.username = editData.username;
-    if (editData.gmail && editData.gmail !== profile.gmail)
-      payload.gmail = editData.gmail;
-    if (
-      editData.nama_lengkap &&
-      editData.nama_lengkap !== profile.nama_lengkap
-    )
-      payload.nama_lengkap = editData.nama_lengkap;
-    if (
-      editData.nomor_telepon &&
-      editData.nomor_telepon !== profile.nomor_telepon
-    )
-      payload.nomor_telepon = editData.nomor_telepon;
-    if (password) {
-      if (password.length < 6)
-        return toast.error("Password minimal 6 karakter");
-      if (password !== confirmPassword)
-        return toast.error("Password tidak cocok");
-      payload.password = password;
+    if (!password) {
+      toast.info("Hanya password yang bisa diperbarui");
+      return;
     }
 
-    if (Object.keys(payload).length === 0) {
-      toast.info("Tidak ada perubahan yang disimpan");
+    if (password.length < 6) {
+      toast.error("Password minimal 6 karakter");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Password tidak cocok");
       return;
     }
 
     try {
       setSaving(true);
-      await axios.put(`/update-user/${profile.id}`, payload);
-      toast.success("Profil berhasil diperbarui");
+      await axios.put("/user-profile/update", { password });
+      toast.success("Password berhasil diperbarui");
       setModalOpen(false);
       fetchProfile();
       setPassword("");
       setConfirmPassword("");
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Gagal memperbarui profil");
+      toast.error(err.response?.data?.detail || "Gagal memperbarui password");
     } finally {
       setSaving(false);
     }
@@ -112,7 +98,7 @@ function ProfilePage() {
                 onClick={() => setModalOpen(true)}
                 className="rounded-lg"
               >
-                <i className="bi bi-gear-fill mr-1"></i>Edit Profil
+                <i className="bi bi-gear-fill mr-1"></i>Edit Password
               </Button>
             </Box>
           }
@@ -121,29 +107,31 @@ function ProfilePage() {
         <CardContent>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <ProfileInfo label="Nama Lengkap" value={profile.nama_lengkap} />
+              <ProfileInfo label="Nama Lengkap" value={profile.nama_lengkap ?? "-"} />
               <ProfileInfo label="Username" value={profile.username} />
               <ProfileInfo label="Email" value={profile.gmail} />
             </Grid>
             <Grid item xs={12} md={6}>
-              <ProfileInfo label="No. Telepon" value={profile.nomor_telepon} />
+              <ProfileInfo label="No. Telepon" value={profile.nomor_telepon ?? "-"} />
               <ProfileInfo label="Role" value={profile.role} />
-              <ProfileInfo
-                label="Bergabung Sejak"
-                value={new Date(profile.created_at).toLocaleString("id-ID", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              />
+              {profile.created_at && (
+                <ProfileInfo
+                  label="Bergabung Sejak"
+                  value={new Date(profile.created_at).toLocaleString("id-ID", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                />
+              )}
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {/* Modal Edit */}
+      {/* Modal Edit Password */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
         <Box
           sx={{
@@ -160,57 +148,18 @@ function ProfilePage() {
           }}
         >
           <Typography variant="h6" className="mb-4">
-            <i className="bi bi-pencil-square mr-2 text-blue-600"></i>
-            Edit Profil
+            <i className="bi bi-lock-fill mr-2 text-blue-600"></i>
+            Ganti Password
           </Typography>
+
+          <Alert severity="info" className="mb-4">
+            Saat ini hanya <strong>password</strong> yang bisa diperbarui.
+          </Alert>
+
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
-                label="Nama Lengkap"
-                fullWidth
-                size="small"
-                value={editData.nama_lengkap || ""}
-                onChange={(e) =>
-                  setEditData({ ...editData, nama_lengkap: e.target.value })
-                }
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Username"
-                fullWidth
-                size="small"
-                value={editData.username || ""}
-                onChange={(e) =>
-                  setEditData({ ...editData, username: e.target.value })
-                }
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Email"
-                fullWidth
-                size="small"
-                value={editData.gmail || ""}
-                onChange={(e) =>
-                  setEditData({ ...editData, gmail: e.target.value })
-                }
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Nomor Telepon"
-                fullWidth
-                size="small"
-                value={editData.nomor_telepon || ""}
-                onChange={(e) =>
-                  setEditData({ ...editData, nomor_telepon: e.target.value })
-                }
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Password Baru (opsional)"
+                label="Password Baru"
                 type="password"
                 fullWidth
                 size="small"
@@ -236,6 +185,7 @@ function ProfilePage() {
               />
             </Grid>
           </Grid>
+
           <Box className="flex justify-end gap-2 mt-4">
             <Button onClick={() => setModalOpen(false)} disabled={saving}>
               Batal

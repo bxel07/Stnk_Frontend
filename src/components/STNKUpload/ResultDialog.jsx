@@ -1,7 +1,7 @@
 import {
   Accordion, AccordionDetails, AccordionSummary, Badge, Box, Button, Chip,
   CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider,
-  Grid, TextField, Typography, MenuItem
+  Grid, TextField, Typography
 } from "@mui/material";
 
 const ResultDialog = ({
@@ -24,19 +24,12 @@ const ResultDialog = ({
   handleImageZoom,
   handleSubmit,
   isSubmitting,
-
-  // Tambahan untuk PT & Brand
   userRole,
   selectedPTs,
-  setSelectedPTs,
   ptList,
   selectedBrands,
-  setSelectedBrands,
   brandList,
-  
 }) => {
-  console.log("PT List in Dialog:", ptList);
-console.log("Brand List in Dialog:", brandList);
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle className="bg-green-50">
@@ -99,7 +92,7 @@ console.log("Brand List in Dialog:", brandList);
               </AccordionSummary>
               <AccordionDetails className="p-4">
                 <Grid container spacing={3}>
-                  {/* Image Preview */}
+                  {/* Gambar */}
                   <Grid item xs={12} md={4}>
                     <Typography variant="subtitle2" className="mb-2 font-medium">
                       Preview Gambar
@@ -122,7 +115,7 @@ console.log("Brand List in Dialog:", brandList);
                     )}
                   </Grid>
 
-                  {/* Form Fields */}
+                  {/* Data STNK */}
                   <Grid item xs={12} md={8}>
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6}>
@@ -140,7 +133,8 @@ console.log("Brand List in Dialog:", brandList);
                           helperText={!correctedNumbers[idx]?.trim() ? "Nomor rangka wajib diisi" : ""}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={3}>
+
+                      <Grid item xs={12} sm={6}>
                         <TextField
                           fullWidth
                           label="Jumlah"
@@ -155,65 +149,8 @@ console.log("Brand List in Dialog:", brandList);
                           inputProps={{ min: 0 }}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={3}>
-                        <TextField
-                          fullWidth
-                          label="Kode Samsat"
-                          variant="outlined"
-                          value={correctedSamsatCodes[idx] || ""}
-                          onChange={(e) => {
-                            const updated = [...correctedSamsatCodes];
-                            updated[idx] = e.target.value;
-                            setCorrectedSamsatCodes(updated);
-                          }}
-                        />
-                      </Grid>
 
-                      {/* Field PT dan Brand untuk role khusus */}
-                      {["cao", "admin", "superadmin"].includes(userRole) && (
-                        <>
-                        
-                          <Grid item xs={12} sm={6}>
-                            <TextField
-                              select
-                              fullWidth
-                              label="PT"
-                              value={selectedPTs[idx] || ""}
-                              onChange={(e) => {
-                                const updated = [...selectedPTs];
-                                updated[idx] = e.target.value;
-                                setSelectedPTs(updated);
-                              }}
-                            >
-                          {ptList.map((pt) => (
-  <MenuItem key={pt.id} value={pt.id}>
-    {pt.nama_pt}
-  </MenuItem>
-))}
-
-                            </TextField>
-                          </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <TextField
-                              select
-                              fullWidth
-                              label="Brand"
-                              value={selectedBrands[idx] || ""}
-                              onChange={(e) => {
-                                const updated = [...selectedBrands];
-                                updated[idx] = e.target.value;
-                                setSelectedBrands(updated);
-                              }}
-                            >
-                           {brandList.map((brand) => (
-  <MenuItem key={brand.id} value={brand.id}>
-    {brand.nama_brand}
-  </MenuItem>
-))}
-                            </TextField>
-                          </Grid>
-                        </>
-                      )}
+                      {/* Bagian Kode Samsat, PT, Brand telah dihapus dari tampilan */}
                     </Grid>
                   </Grid>
                 </Grid>

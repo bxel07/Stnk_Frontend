@@ -112,8 +112,8 @@ console.log("Brand List Response:", brandRes.data);
       setCorrectedNumbers(results.map(r => r.nomor_rangka || ""));
       setCorrectedQuantities(results.map(r => r.details?.jumlah?.toString() || "0"));
       setCorrectedSamsatCodes(results.map(r => r.kode_samsat || ""));
-      setSelectedPTs(results.map(() => ""));
-      setSelectedBrands(results.map(() => ""));
+      setSelectedPTs(results.map(r => r.pt_id || ""));
+      setSelectedBrands(results.map(r => r.brand_id || ""));
       setExpandedPanels(new Set([0]));
       setResultDialog(true);
     } catch (err) {
@@ -124,6 +124,7 @@ console.log("Brand List Response:", brandRes.data);
         text: 'Silakan coba lagi.',
         confirmButtonColor: '#dc3545'
       });
+      resetAll();
     } finally {
       setIsProcessing(false);
     }
@@ -204,7 +205,7 @@ console.log("Brand List Response:", brandRes.data);
           details: {
             jumlah: parseInt(correctedQuantities[i]) || 0
           },
-          pt_id: selectedPTs[i] || null,
+          pt_id: selectedPTs[i] || null, 
           brand_id: selectedBrands[i] || null,
           corrected:
             correctedNumbers[i].trim() !== original.nomor_rangka ||

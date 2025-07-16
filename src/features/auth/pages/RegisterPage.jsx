@@ -38,7 +38,7 @@ const RegisterPage = () => {
     role_id: "",
     nama_lengkap: "",
     nomor_telepon: "",
-    glbm_pt_ids: [],
+    glbm_pt_id: "", // PT tunggal
     glbm_brand_ids: [],
     glbm_samsat_id: "",
   });
@@ -89,11 +89,11 @@ const RegisterPage = () => {
     e.preventDefault();
     setErrorMsg("");
     setLoading(true);
-  
+
     try {
       const token = localStorage.getItem("access_token");
       const roleName = getSelectedRoleName();
-  
+
       const payload = {
         username: form.username,
         gmail: form.gmail,
@@ -102,42 +102,36 @@ const RegisterPage = () => {
         nama_lengkap: form.nama_lengkap,
         nomor_telepon: form.nomor_telepon,
         glbm_samsat_id: parseInt(form.glbm_samsat_id),
+        glbm_pt_id: null,
+        glbm_brand_ids: [],
       };
-  
-      // SUPERADMIN dan ADMIN kirim PT dan brand
+
       if (roleName === "superadmin" || roleName === "admin") {
-        payload.glbm_pt_id = form.glbm_pt_ids[0] || null;
-        payload.glbm_brand_ids = form.glbm_brand_ids.length > 0 ? form.glbm_brand_ids : [];
+        if (!form.glbm_pt_id) throw new Error("PT harus dipilih");
+        if (form.glbm_brand_ids.length === 0) throw new Error("Pilih minimal 1 brand");
+        payload.glbm_pt_id = parseInt(form.glbm_pt_id);
+        payload.glbm_brand_ids = form.glbm_brand_ids.map(Number);
       }
-  
-      // CAO hanya kirim brand
+
       if (roleName === "cao") {
+        if (form.glbm_brand_ids.length === 0) throw new Error("Pilih minimal 1 brand");
         payload.glbm_pt_id = null;
-        payload.glbm_brand_ids = form.glbm_brand_ids.length > 0 ? form.glbm_brand_ids : [];
+        payload.glbm_brand_ids = form.glbm_brand_ids.map(Number);
       }
-  
-      // USER tidak kirim pt/brand
-      if (roleName === "user") {
-        payload.glbm_pt_id = null;
-        payload.glbm_brand_ids = [];
-      }
-  
+
       await axios.post(`${baseUrl}/api/register`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
+
       Swal.fire("Berhasil", "Akun berhasil dibuat!", "success");
       navigate("/dashboard");
     } catch (err) {
-      const msg =
-        err?.response?.data?.detail ||
-        JSON.stringify(err?.response?.data || err.message);
+      const msg = err?.response?.data?.detail || err.message;
       setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
   };
-  
 
   return (
     <Box sx={{ padding: { xs: 2, md: 4 } }}>
@@ -159,36 +153,21 @@ const RegisterPage = () => {
 
             <form onSubmit={handleSubmit}>
               <TextField
-                fullWidth
-                required
-                margin="normal"
-                label="Username"
-                name="username"
-                value={form.username}
-                onChange={handleChange}
+                fullWidth required margin="normal" label="Username" name="username"
+                value={form.username} onChange={handleChange}
                 InputProps={{
                   startAdornment: (
-                    <InputAdornment position="start">
-                      <User size={18} />
-                    </InputAdornment>
+                    <InputAdornment position="start"><User size={18} /></InputAdornment>
                   ),
                 }}
               />
 
               <TextField
-                fullWidth
-                required
-                margin="normal"
-                label="Email"
-                name="gmail"
-                type="email"
-                value={form.gmail}
-                onChange={handleChange}
+                fullWidth required margin="normal" label="Email" name="gmail" type="email"
+                value={form.gmail} onChange={handleChange}
                 InputProps={{
                   startAdornment: (
-                    <InputAdornment position="start">
-                      <Mail size={18} />
-                    </InputAdornment>
+                    <InputAdornment position="start"><Mail size={18} /></InputAdornment>
                   ),
                 }}
               />
@@ -196,15 +175,10 @@ const RegisterPage = () => {
               <FormControl fullWidth margin="normal" required>
                 <InputLabel id="role-label">Pilih Role</InputLabel>
                 <Select
-                  labelId="role-label"
-                  name="role_id"
-                  value={form.role_id}
-                  label="Pilih Role"
-                  onChange={handleChange}
+                  labelId="role-label" name="role_id" value={form.role_id}
+                  label="Pilih Role" onChange={handleChange}
                   startAdornment={
-                    <InputAdornment position="start">
-                      <Shield size={18} />
-                    </InputAdornment>
+                    <InputAdornment position="start"><Shield size={18} /></InputAdornment>
                   }
                 >
                   {roles
@@ -221,85 +195,54 @@ const RegisterPage = () => {
               </FormControl>
 
               <TextField
-                fullWidth
-                required
-                margin="normal"
-                label="Nama Lengkap"
-                name="nama_lengkap"
-                value={form.nama_lengkap}
-                onChange={handleChange}
+                fullWidth required margin="normal" label="Nama Lengkap" name="nama_lengkap"
+                value={form.nama_lengkap} onChange={handleChange}
               />
 
               <TextField
-                fullWidth
-                required
-                margin="normal"
-                label="Nomor Telepon"
-                name="nomor_telepon"
-                value={form.nomor_telepon}
-                onChange={handleChange}
+                fullWidth required margin="normal" label="Nomor Telepon" name="nomor_telepon"
+                value={form.nomor_telepon} onChange={handleChange}
                 InputProps={{
                   startAdornment: (
-                    <InputAdornment position="start">
-                      <Phone size={18} />
-                    </InputAdornment>
+                    <InputAdornment position="start"><Phone size={18} /></InputAdornment>
                   ),
                 }}
               />
 
-              {/* PT */}
               {getSelectedRoleName() !== "cao" && getSelectedRoleName() !== "user" && (
                 <FormControl fullWidth margin="normal" required>
                   <InputLabel id="pt-label">Pilih PT</InputLabel>
                   <Select
-                    labelId="pt-label"
-                    name="glbm_pt_ids"
-                    multiple={getSelectedRoleName() === "superadmin"}
-                    value={form.glbm_pt_ids}
-                    label="Pilih PT"
-                    onChange={(e) =>
-                      setForm({ ...form, glbm_pt_ids: e.target.value })
-                    }
+                    labelId="pt-label" name="glbm_pt_id" value={form.glbm_pt_id}
+                    label="Pilih PT" onChange={handleChange}
                   >
                     {ptList.map((pt) => (
-                      <MenuItem key={pt.id} value={pt.id}>
-                        {pt.nama_pt}
-                      </MenuItem>
+                      <MenuItem key={pt.id} value={pt.id}>{pt.nama_pt}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               )}
 
-              {/* Brand */}
               {getSelectedRoleName() !== "user" && (
                 <FormControl fullWidth margin="normal" required>
                   <InputLabel id="brand-label">Pilih Brand</InputLabel>
                   <Select
-                    labelId="brand-label"
-                    name="glbm_brand_ids"
-                    multiple
-                    value={form.glbm_brand_ids}
-                    onChange={(e) =>
-                      setForm({ ...form, glbm_brand_ids: e.target.value })
-                    }
+                    labelId="brand-label" name="glbm_brand_ids"
+                    multiple value={form.glbm_brand_ids}
+                    onChange={(e) => setForm({ ...form, glbm_brand_ids: e.target.value })}
                   >
                     {brandList.map((brand) => (
-                      <MenuItem key={brand.id} value={brand.id}>
-                        {brand.nama_brand}
-                      </MenuItem>
+                      <MenuItem key={brand.id} value={brand.id}>{brand.nama_brand}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               )}
 
-              {/* Samsat */}
               <FormControl fullWidth margin="normal" required>
                 <InputLabel id="samsat-label">Pilih Samsat</InputLabel>
                 <Select
-                  labelId="samsat-label"
-                  name="glbm_samsat_id"
-                  value={form.glbm_samsat_id}
-                  label="Pilih Samsat"
+                  labelId="samsat-label" name="glbm_samsat_id"
+                  value={form.glbm_samsat_id} label="Pilih Samsat"
                   onChange={handleChange}
                 >
                   {samsatList.map((s) => (
@@ -311,18 +254,11 @@ const RegisterPage = () => {
               </FormControl>
 
               <Button
-                fullWidth
-                variant="contained"
-                type="submit"
-                disabled={loading}
+                fullWidth variant="contained" type="submit" disabled={loading}
                 startIcon={<UserCheck />}
                 sx={{
-                  mt: 2,
-                  backgroundColor: "#065f46",
-                  textTransform: "none",
-                  "&:hover": {
-                    backgroundColor: "#047857",
-                  },
+                  mt: 2, backgroundColor: "#065f46", textTransform: "none",
+                  "&:hover": { backgroundColor: "#047857" },
                 }}
               >
                 {loading ? "Memproses..." : "Daftarkan Pengguna"}
