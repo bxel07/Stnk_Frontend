@@ -164,26 +164,27 @@ function LoginPage() {
               }}
             />
             <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              disabled={loading}
-              sx={{
-                backgroundColor: '#065f46',
-                '&:hover': {
-                  backgroundColor: '#047857'
-                },
-                '&:disabled': {
-                  backgroundColor: '#9ca3af'
-                },
-                padding: '12px 0',
-                fontSize: '16px',
-                fontWeight: 500,
-                textTransform: 'none'
-              }}
-            >
-              {loading ? "Memproses..." : "Masuk"}
-            </Button>
+  type="submit"
+  fullWidth
+  variant="contained"
+  disabled={loading}
+  sx={{
+    backgroundColor: '#166534', // biru tua
+    '&:hover': {
+      backgroundColor: '#f7f45' // biru sedikit lebih terang saat hover
+    },
+    '&:disabled': {
+      backgroundColor: '#9ca3af' // abu saat disabled
+    },
+    padding: '12px 0',
+    fontSize: '16px',
+    fontWeight: 500,
+    textTransform: 'none'
+  }}
+>
+  {loading ? "Memproses..." : "Masuk"}
+</Button>
+
           </Box>
         </Paper>
       </Container>

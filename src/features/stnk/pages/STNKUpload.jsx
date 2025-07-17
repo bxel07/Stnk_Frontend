@@ -1,20 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
-import {
-  Card, CardContent, CardHeader, Typography, Button, Grid, Box,
-  Chip, CircularProgress, Alert, Divider
-} from "@mui/material";
-
-import {
-  processStnkBatch,
-  saveStnk
-} from "@/slices/stnkSlice";
-
+import { Card, CardContent, CardHeader, Typography, Button, Grid, Box, Chip, CircularProgress, Alert, Divider } from "@mui/material";
+import { processStnkBatch, saveStnk } from "@/slices/stnkSlice";
 import CameraDialog from "@/components/STNKUpload/CameraDialog";
 import ResultDialog from "@/components/STNKUpload/ResultDialog";
 import ZoomDialog from "@/components/STNKUpload/ZoomDialog";
-
 import { getPTList, getBrandList } from "@/services/stnkService";
 
 // SweetAlert z-index fix
@@ -49,8 +40,6 @@ const STNKUpload = () => {
   const [brandList, setBrandList] = useState([]);
   const [selectedPTs, setSelectedPTs] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
-  
-
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -60,18 +49,14 @@ const STNKUpload = () => {
       try {
         const [ptRes, brandRes] = await Promise.all([
           getPTList(),
-          getBrandList(),
-          
+          getBrandList(),  
         ]);
-        console.log("PT List Response:", ptRes.data);
-console.log("Brand List Response:", brandRes.data);
         setPtList(ptRes.data);
         setBrandList(brandRes.data);
       } catch (err) {
         console.error("Gagal memuat PT/Brand:", err);
       }
     };
-
     if (["cao", "admin", "superadmin"].includes(userRole)) {
       fetchLists();
     }
@@ -98,7 +83,7 @@ console.log("Brand List Response:", brandRes.data);
     const updatedImages = [...selectedImages, ...newImages];
     setSelectedImages(updatedImages);
     if (newImages.length > 0) processSTNKBatchRequest(updatedImages);
-  };
+    };
 
   const processSTNKBatchRequest = async (files) => {
     setIsProcessing(true);
@@ -212,11 +197,8 @@ console.log("Brand List Response:", brandRes.data);
             (parseInt(correctedQuantities[i]) || 0) !== (original.jumlah || 0) ||
             correctedSamsatCodes[i].trim() !== (original.kode_samsat || ""),
         };
-        
-        console.log("Final STNK data to save:", finalData);
         await dispatch(saveStnk(finalData)).unwrap();
       }
-
       await Swal.fire({
         icon: 'success',
         title: 'Berhasil!',
@@ -224,12 +206,10 @@ console.log("Brand List Response:", brandRes.data);
         confirmButtonColor: '#28a745',
         customClass: { container: 'swal-high-z-index' }
       });
-
       resetAll();
     } catch (err) {
       const errorDetail = err?.response?.data?.detail || err?.response?.data || err.message;
       console.error("Gagal menyimpan STNK:", errorDetail);
-
       Swal.fire({
         icon: 'error',
         title: 'Gagal Menyimpan',
@@ -266,7 +246,12 @@ console.log("Brand List Response:", brandRes.data);
     if (corrected.trim() !== original) return <Chip label="Dikoreksi" color="warning" size="small" />;
     return <Chip label="Valid" color="success" size="small" />;
   };
-
+  useEffect(() => {
+    if (!resultDialog) {
+      resetAll(); // Akan dipanggil otomatis saat modal ditutup
+    }
+  }, [resultDialog]);
+  
   return (
     <>
       {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}

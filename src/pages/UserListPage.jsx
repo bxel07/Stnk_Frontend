@@ -7,11 +7,23 @@ import {
   TableHead, TableRow, CircularProgress, Alert, Card, CardContent,
   CardHeader, Divider, Chip, TextField, FormControl, InputLabel,
   Select, MenuItem, Grid, Button, Dialog, DialogTitle, DialogContent,
-  DialogActions, IconButton
+  DialogActions, IconButton, Fade, Slide
 } from "@mui/material";
-import { Add, Delete } from "@mui/icons-material";
-import RegisterUserModal from "@/components/RegisterUserModal"; 
-
+import { 
+  Add, 
+  Delete, 
+  Person, 
+  SupervisorAccount, 
+  AdminPanelSettings, 
+  Group, 
+  Edit, 
+  Search,
+  FilterList,
+  AccountCircle,
+  Stars,
+  Security
+} from "@mui/icons-material";
+import RegisterUserModal from "@/components/RegisterUserModal";
 
 const UserListPage = () => {
   const user = useSelector((state) => state.auth.user);
@@ -112,11 +124,30 @@ const UserListPage = () => {
   
     return result || "-";
   };
+
+  const getRoleIcon = (role) => {
+    const iconColor = '#166534';
+    const iconSize = 20;
+    
+    switch (role?.toLowerCase()) {
+      case 'superadmin':
+        return <Stars sx={{ color: iconColor, fontSize: iconSize }} />;
+      case 'admin':
+        return <AdminPanelSettings sx={{ color: iconColor, fontSize: iconSize }} />;
+      case 'cao':
+        return <SupervisorAccount sx={{ color: iconColor, fontSize: iconSize }} />;
+      case 'user':
+        return <Group sx={{ color: iconColor, fontSize: iconSize }} />;
+      default:
+        return <Person sx={{ color: iconColor, fontSize: iconSize }} />;
+    }
+  };
   
   const getRoleColor = (role) => {
     switch (role) {
       case "superadmin": return "error";
       case "admin": return "warning";
+      case "cao": return "info";
       case "user": return "primary";
       default: return "default";
     }
@@ -136,119 +167,281 @@ const UserListPage = () => {
     return [...new Set(users.map(user => user.role?.role || user.role).filter(Boolean))];
   };
 
-  
-  if (loading) return (
-    <Box className="flex justify-center items-center py-12">
-      <CircularProgress size={40} />
-      <Typography variant="body1" className="ml-4 text-gray-600">
-        Memuat daftar Akun...
-      </Typography>
-    </Box>
-  );
+  if (loading) {
+    return (
+      <Box className="flex justify-center items-center py-16">
+        <Paper elevation={3} className="p-8 rounded-2xl">
+          <Box className="flex flex-col items-center">
+            <CircularProgress size={40} sx={{ color: '#166534' }} />
+            <Typography className="mt-4 text-gray-600 font-medium">
+              Memuat daftar Akun...
+            </Typography>
+          </Box>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box className="space-y-6">
-      {error && <Alert severity="error">{error}</Alert>}
+      {/* Header Section */}
+      <Fade in={true} timeout={800}>
+        <Card className="shadow-lg rounded-2xl overflow-hidden">
+          <Box className="bg-gradient-to-r from-green-700 to-green-800 p-6">
+            <Box className="flex items-center gap-4">
+              <Box className="bg-white/10 p-3 rounded-full backdrop-blur-sm">
+                <AccountCircle sx={{ color: 'white', fontSize: 35 }} />
+              </Box>
+              <Box className="flex-1">
+                <Typography 
+                  variant="h4" 
+                  component="h1" 
+                  className="text-white font-bold mb-1"
+                >
+                  Manajemen Akun
+                </Typography>
+                <Typography 
+                  variant="subtitle1" 
+                  className="text-green-100 font-medium"
+                >
+                  Kelola dan pantau akun pengguna sistem
+                </Typography>
+              </Box>
+              <Box className="hidden md:flex items-center gap-2">
+                <Group sx={{ color: 'white', fontSize: 32 }} />
+                <Security sx={{ color: 'white', fontSize: 32 }} />
+              </Box>
+            </Box>
+          </Box>
+        </Card>
+      </Fade>
 
-      {/* Filter */}
-      <Card><CardHeader title="Filter Akun" /><Divider /><CardContent>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <TextField fullWidth label="Cari Akun" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <FormControl fullWidth>
-              <InputLabel>Filter Role</InputLabel>
-              <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-                <MenuItem value="all">Semua Role</MenuItem>
-                {getUniqueRoles().map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
-      </CardContent></Card>
+      {error && (
+        <Fade in={true} timeout={600}>
+          <Alert severity="error" className="rounded-2xl">
+            {error}
+          </Alert>
+        </Fade>
+      )}
 
-      {/* Table */}
-      <Card><CardHeader
-  title={
-    <Box display="flex" justifyContent="space-between" alignItems="center">
-      <Typography variant="h6">Daftar Akun</Typography>
-      <Button variant="contained"startIcon={<Add />}onClick={() => setRegisterModalOpen(true)}>Tambah Akun</Button></Box>}/><Divider /><CardContent>
-        <TableContainer component={Paper}>
-          <Table stickyHeader>
-            <TableHead><TableRow>
-              <TableCell>No</TableCell>
-              <TableCell>Username</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Role</TableCell>
-              <TableCell>Brand</TableCell>
-              <TableCell>PT</TableCell>
-              <TableCell>Aksi</TableCell>
-            </TableRow></TableHead>
-            <TableBody>
-  {filteredUsers.map((u, i) => {
-    // Debug log
-    const brandIds = u.otorisasi?.map((o) => o.brand_id) || [];
-    const ptIds = u.otorisasi?.map((o) => o.pt_id) || [];
-    console.log(`User: ${u.username}`, {
-      brandIds,
-      ptIds,
-      brandNames: getBrandName(brandIds),
-      ptNames: getPtName(ptIds)
-    });
-    console.log("User:", u.username);
-console.log("Otorisasi brand_id:", u.otorisasi?.map((o) => o.brand_id));
-console.log("Brand list:", brandList);
-console.log("Hasil getBrandName:", getBrandName(u.otorisasi?.map((o) => o.brand_id)));
+      {/* Filter Section */}
+      <Slide direction="up" in={true} timeout={600}>
+        <Card className="shadow-lg rounded-2xl">
+          <Box className="bg-green-50 p-4 border-b border-green-200">
+            <Box className="flex items-center gap-2">
+              <FilterList sx={{ color: '#166534', fontSize: 24 }} />
+              <Typography variant="h6" className="font-bold text-gray-800">
+                Filter & Pencarian
+              </Typography>
+            </Box>
+          </Box>
+          <CardContent className="p-6">
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField 
+                  fullWidth 
+                  label="Cari Akun" 
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  InputProps={{
+                    startAdornment: <Search sx={{ color: '#166534', mr: 1 }} />
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#166534',
+                      },
+                    },
+                    '& .MuiInputLabel-root.Mui-focused': {
+                      color: '#166534',
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                    Filter Role
+                  </InputLabel>
+                  <Select 
+                    value={roleFilter} 
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    label="Filter Role"
+                    sx={{
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#166534',
+                      },
+                    }}
+                  >
+                    <MenuItem value="all">Semua Role</MenuItem>
+                    {getUniqueRoles().map((r) => (
+                      <MenuItem key={r} value={r}>
+                        <Box className="flex items-center gap-2">
+                          {getRoleIcon(r)}
+                          {r}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={2}>
+                <Button 
+                  fullWidth
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={() => setRegisterModalOpen(true)}
+                  sx={{
+                    bgcolor: '#166534',
+                    '&:hover': {
+                      bgcolor: '#0f5132',
+                    },
+                    height: '56px',
+                    fontWeight: 600,
+                  }}
+                >
+                  Registrasi
+                </Button>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </Slide>
 
-
-    return (
-      <TableRow key={u.id}>
-        <TableCell>{i + 1}</TableCell>
-        <TableCell>{u.username}</TableCell>
-        <TableCell>{u.email || u.gmail}</TableCell>
-        <TableCell>
-          <Chip
-            label={u.role?.role || u.role}
-            color={getRoleColor(u.role?.role || u.role)}
-            size="small"
-          />
-        </TableCell>
-        <TableCell>
-  {getBrandName(u.brand_ids)}
-</TableCell>
-
-<TableCell>
-  {getPtName(
-    Array.isArray(u.otorisasi) && u.otorisasi.length
-      ? u.otorisasi.map((o) => o.pt_id)
-      : u.pt_id
-  )}
-</TableCell>
-
-        <TableCell>
-          <Button onClick={() => handleOpenModal(u)} size="small" variant="outlined">
-            Edit
-          </Button>
-        </TableCell>
-      </TableRow>
-    );
-  })}
-</TableBody>
-
-          </Table>
-        </TableContainer>
-      </CardContent></Card>
+      {/* Table Section */}
+      <Fade in={true} timeout={1000}>
+        <Card className="shadow-lg rounded-2xl">
+          <Box className="bg-green-50 p-4 border-b border-green-200">
+            <Box className="flex items-center justify-between">
+              <Box className="flex items-center gap-2">
+                <Group sx={{ color: '#166534', fontSize: 24 }} />
+                <Typography variant="h6" className="font-bold text-gray-800">
+                  Daftar Akun ({filteredUsers.length})
+                </Typography>
+              </Box>
+              <Chip 
+                label={`Total: ${filteredUsers.length} akun`}
+                sx={{ 
+                  bgcolor: '#166534',
+                  color: 'white',
+                  fontWeight: 600,
+                }}
+              />
+            </Box>
+          </Box>
+          <CardContent className="p-6">
+            <TableContainer component={Paper} className="rounded-xl shadow-sm">
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>No</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Username</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Email</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Role</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Brand</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>PT</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Aksi</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredUsers.map((u, i) => {
+                    const brandIds = u.otorisasi?.map((o) => o.brand_id) || [];
+                    const ptIds = u.otorisasi?.map((o) => o.pt_id) || [];
+                    
+                    return (
+                      <TableRow 
+                        key={u.id}
+                        sx={{ 
+                          '&:hover': { 
+                            bgcolor: '#f8fafc',
+                            transition: 'background-color 0.2s'
+                          } 
+                        }}
+                      >
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell>
+                          <Box className="flex items-center gap-2">
+                            <Person sx={{ color: '#166534', fontSize: 18 }} />
+                            <Typography variant="body2" className="font-medium">
+                              {u.username}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{u.email || u.gmail}</TableCell>
+                        <TableCell>
+                          <Box className="flex items-center gap-2">
+                            {getRoleIcon(u.role?.role || u.role)}
+                            <Chip
+                              label={u.role?.role || u.role}
+                              color={getRoleColor(u.role?.role || u.role)}
+                              size="small"
+                              sx={{ fontWeight: 600 }}
+                            />
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" className="text-gray-600">
+                            {getBrandName(u.brand_ids)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" className="text-gray-600">
+                            {getPtName(
+                              Array.isArray(u.otorisasi) && u.otorisasi.length
+                                ? u.otorisasi.map((o) => o.pt_id)
+                                : u.pt_id
+                            )}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            onClick={() => handleOpenModal(u)} 
+                            size="small" 
+                            variant="outlined"
+                            startIcon={<Edit />}
+                            sx={{
+                              borderColor: '#166534',
+                              color: '#166534',
+                              '&:hover': {
+                                borderColor: '#0f5132',
+                                bgcolor: '#f0fdf4',
+                              },
+                              fontWeight: 600,
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Fade>
 
       {modalOpen && selectedUser && (
-        <EditUserModal open={modalOpen}onClose={() => setModalOpen(false)}userId={selectedUser.id}onSaved={handleSave}/>
+        <EditUserModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          userId={selectedUser.id}
+          onSaved={handleSave}
+          currentUserRole={user?.role}
+        />      
       )}
-      <RegisterUserModal open={registerModalOpen}onClose={() => setRegisterModalOpen(false)}onSuccess={fetchUsers}/>
+      
+      <RegisterUserModal 
+        open={registerModalOpen}
+        onClose={() => setRegisterModalOpen(false)}
+        onSuccess={fetchUsers}
+      />
     </Box>
   );
 };
 
-const EditUserModal = ({ open, onClose, userId, onSaved }) => {
+const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
   const BASE_URL = import.meta.env.VITE_API_URL + "/api";
   const token = localStorage.getItem("access_token");
   const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -265,6 +458,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
   const [brandList, setBrandList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  const [selectedRoleName, setSelectedRoleName] = useState("");
 
   useEffect(() => {
     if (!userId || !open) return;
@@ -291,7 +485,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
           return;
         }
   
-        // Atur jumlah otorisasi sesuai jumlah detail dari backend
         const originalOtorisasi = u.otorisasi || [];
   
         setForm({
@@ -306,9 +499,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
             : [{ pt_id: u.pt_id || "", brand_id: u.brand_id || "" }],
         });
   
-        console.log("Data otorisasi user:", originalOtorisasi);
-
-  
         setErrorMsg("");
       } catch (err) {
         setErrorMsg("Gagal memuat data user");
@@ -319,10 +509,22 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
   
     fetchAll();
   }, [userId, open]);
+
+  useEffect(() => {
+    if (form.role_id && roles.length > 0) {
+      const selectedRole = roles.find((r) => r.id === parseInt(form.role_id));
+      setSelectedRoleName(selectedRole?.name || "");
+    }
+  }, [form.role_id, roles]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "role_id") {
+      const selectedRole = roles.find((r) => r.id === parseInt(value));
+      setSelectedRoleName(selectedRole?.name || "");
+    }
   };
 
   const handleOtorisasiChange = (i, field, value) => {
@@ -336,14 +538,12 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
       const payload = {
         username: form.username,
         gmail: form.gmail,
-        role_id: parseInt(form.role_id), // pastikan angka
+        role_id: parseInt(form.role_id),
         otorisasi: form.otorisasi.map((o) => ({
-          pt_id: o.pt_id ? parseInt(o.pt_id) : null, // ubah string ke int, atau null
+          pt_id: o.pt_id ? parseInt(o.pt_id) : null,
           brand_id: o.brand_id ? parseInt(o.brand_id) : null,
         })),
       };
-      
-      console.log("Payload yang dikirim:", payload);
       
       await axios.put(`${BASE_URL}/update-user/${userId}`, payload, config);
       onSaved();
@@ -355,63 +555,203 @@ const EditUserModal = ({ open, onClose, userId, onSaved }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Edit Pengguna</DialogTitle>
-      <DialogContent dividers>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      fullWidth 
+      maxWidth="md"
+      PaperProps={{
+        className: "rounded-2xl",
+      }}
+    >
+      <DialogTitle className="bg-green-50 border-b border-green-200">
+        <Box className="flex items-center gap-2">
+          <Edit sx={{ color: '#166534', fontSize: 24 }} />
+          <Typography variant="h6" className="font-bold text-gray-800">
+            Edit Pengguna
+          </Typography>
+        </Box>
+      </DialogTitle>
+      <DialogContent dividers className="p-6">
         {loading ? (
-          <Grid container justifyContent="center" alignItems="center"><CircularProgress /></Grid>
+          <Box className="flex justify-center items-center py-8">
+            <CircularProgress size={40} sx={{ color: '#166534' }} />
+          </Box>
         ) : (
-          <>
-            {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
-            <TextField fullWidth margin="normal" name="username" label="Username" value={form.username} onChange={handleChange} />
-            <TextField fullWidth margin="normal" name="gmail" label="Email" value={form.gmail} onChange={handleChange} />
+          <Box className="space-y-4">
+            {errorMsg && (
+              <Alert severity="error" className="rounded-xl">
+                {errorMsg}
+              </Alert>
+            )}
+            
+            <TextField 
+              fullWidth 
+              margin="normal" 
+              name="username" 
+              label="Username" 
+              value={form.username} 
+              onChange={handleChange}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#166534',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#166534',
+                },
+              }}
+            />
+            
+            <TextField 
+              fullWidth 
+              margin="normal" 
+              name="gmail" 
+              label="Email" 
+              value={form.gmail} 
+              onChange={handleChange}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#166534',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#166534',
+                },
+              }}
+            />
+            
             <FormControl fullWidth margin="normal">
-              <InputLabel>Role</InputLabel>
-              <Select name="role_id" value={form.role_id} onChange={handleChange} label="Role">
-                {roles.map((r) => (
-                  <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
-                ))}
+              <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                Role
+              </InputLabel>
+              <Select 
+                name="role_id" 
+                value={form.role_id} 
+                onChange={handleChange} 
+                label="Role"
+                sx={{
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#166534',
+                  },
+                }}
+              >
+                {roles
+                  .filter((r) => {
+                    if (currentUserRole === "admin") {
+                      return r.name === "user" || r.name === "cao";
+                    }
+                    return true;
+                  })
+                  .map((r) => (
+                    <MenuItem key={r.id} value={r.id}>
+                      <Box className="flex items-center gap-2">
+                        {r.name === 'superadmin' && <Stars sx={{ color: '#166534', fontSize: 18 }} />}
+                        {r.name === 'admin' && <AdminPanelSettings sx={{ color: '#166534', fontSize: 18 }} />}
+                        {r.name === 'cao' && <SupervisorAccount sx={{ color: '#166534', fontSize: 18 }} />}
+                        {r.name === 'user' && <Group sx={{ color: '#166534', fontSize: 18 }} />}
+                        {r.name}
+                      </Box>
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
-            <Typography mt={3} mb={1} fontWeight={600}>Otorisasi PT & Brand</Typography>
-            {form.otorisasi.map((otor, i) => (
-              <Grid container spacing={2} alignItems="center" key={i}>
-                <Grid item xs={6}>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel>PT</InputLabel>
-                    <Select
-                      value={otor.pt_id}
-                      onChange={(e) => handleOtorisasiChange(i, "pt_id", e.target.value)}
-                      label="PT"
-                    >
-                      {ptList.map((pt) => (
-                        <MenuItem key={pt.id} value={pt.id}>{pt.nama_pt}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+            
+            <Box className="mt-6">
+              <Typography variant="h6" className="font-bold text-gray-800 mb-3">
+                Otorisasi PT & Brand
+              </Typography>
+              
+              {form.otorisasi.map((otor, i) => (
+                <Grid container spacing={2} alignItems="center" key={i} className="mb-3">
+                  {(selectedRoleName !== "cao" && selectedRoleName !== "user") && (
+                    <Grid item xs={6}>
+                      <FormControl fullWidth margin="dense">
+                        <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                          PT
+                        </InputLabel>
+                        <Select
+                          value={otor.pt_id}
+                          onChange={(e) => handleOtorisasiChange(i, "pt_id", e.target.value)}
+                          label="PT"
+                          sx={{
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#166534',
+                            },
+                          }}
+                        >
+                          {ptList.map((pt) => (
+                            <MenuItem key={pt.id} value={pt.id}>
+                              {pt.nama_pt}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  )}
+                  
+                  {(selectedRoleName === "cao" || selectedRoleName === "admin" || selectedRoleName === "superadmin") && (
+                    <Grid item xs={selectedRoleName === "cao" ? 12 : 6}>
+                      <FormControl fullWidth margin="dense">
+                        <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                          Brand
+                        </InputLabel>
+                        <Select
+                          value={otor.brand_id}
+                          onChange={(e) => handleOtorisasiChange(i, "brand_id", e.target.value)}
+                          label="Brand"
+                          sx={{
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#166534',
+                            },
+                          }}
+                        >
+                          {brandList.map((b) => (
+                            <MenuItem key={b.id} value={b.id}>
+                              {b.nama_brand}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  )}
                 </Grid>
-                <Grid item xs={6}>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel>Brand</InputLabel>
-                    <Select
-                      value={otor.brand_id}
-                      onChange={(e) => handleOtorisasiChange(i, "brand_id", e.target.value)}
-                      label="Brand"
-                    >
-                      {brandList.map((b) => (
-                        <MenuItem key={b.id} value={b.id}>{b.nama_brand}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-            ))}
-          </>
+              ))}
+            </Box>
+          </Box>
         )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Batal</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={loading}>Simpan</Button>
+      <DialogActions className="p-6">
+        <Button 
+          onClick={onClose}
+          variant="outlined"
+          sx={{
+            borderColor: '#6b7280',
+            color: '#6b7280',
+            '&:hover': {
+              borderColor: '#4b5563',
+              bgcolor: '#f9fafb',
+            },
+          }}
+        >
+          Batal
+        </Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained" 
+          disabled={loading}
+          sx={{
+            bgcolor: '#166534',
+            '&:hover': {
+              bgcolor: '#0f5132',
+            },
+            fontWeight: 600,
+          }}
+        >
+          Simpan
+        </Button>
       </DialogActions>
     </Dialog>
   );

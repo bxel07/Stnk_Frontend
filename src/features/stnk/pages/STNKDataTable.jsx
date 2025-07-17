@@ -143,7 +143,6 @@ if (dateFilter.filterType === "today") {
   });
 }
 
-  
 
   setFilteredData(filtered);
 }, [stnkData, kodeSamsatFilter, ptFilter, brandFilter, dateFilter]);
@@ -163,7 +162,6 @@ useEffect(() => {
 }, [stnkData]);
 
   
-
   const handleFilterTypeChange = (type) => {
     setDateFilter(prev => ({
       ...prev,
@@ -372,7 +370,6 @@ useEffect(() => {
     </FormControl>
   </Grid>
 )}
-
             
             {dateFilter.filterType === 'custom' && (
               <Grid item xs={12} sm={4}>
