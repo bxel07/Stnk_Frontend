@@ -1,7 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
-import { Card, CardContent, CardHeader, Typography, Button, Grid, Box, Chip, CircularProgress, Alert, Divider } from "@mui/material";
+import { 
+  Card, CardContent, CardHeader, Typography, Button, Grid, Box, Chip, 
+  CircularProgress, Alert, Divider, Fade, Slide, Paper
+} from "@mui/material";
+import { 
+  CloudUpload, 
+  CameraAlt, 
+  Refresh, 
+  Upload,
+  Image as ImageIcon,
+  PhotoCamera
+} from "@mui/icons-material";
 import { processStnkBatch, saveStnk } from "@/slices/stnkSlice";
 import CameraDialog from "@/components/STNKUpload/CameraDialog";
 import ResultDialog from "@/components/STNKUpload/ResultDialog";
@@ -15,7 +26,6 @@ if (!document.getElementById("swal-high-z-index-style")) {
   style.innerHTML = `.swal-high-z-index { z-index: 13000 !important; }`;
   document.head.appendChild(style);
 }
-
 
 const STNKUpload = () => {
   const dispatch = useDispatch();
@@ -83,7 +93,7 @@ const STNKUpload = () => {
     const updatedImages = [...selectedImages, ...newImages];
     setSelectedImages(updatedImages);
     if (newImages.length > 0) processSTNKBatchRequest(updatedImages);
-    };
+  };
 
   const processSTNKBatchRequest = async (files) => {
     setIsProcessing(true);
@@ -242,69 +252,184 @@ const STNKUpload = () => {
   };
 
   const getStatusChip = (result, corrected, original) => {
-    if (!corrected.trim()) return <Chip label="Perlu Koreksi" color="error" size="small" />;
-    if (corrected.trim() !== original) return <Chip label="Dikoreksi" color="warning" size="small" />;
-    return <Chip label="Valid" color="success" size="small" />;
+    if (!corrected.trim()) return <Chip label="Perlu Koreksi" color="error" size="small" sx={{ fontWeight: 600 }} />;
+    if (corrected.trim() !== original) return <Chip label="Dikoreksi" color="warning" size="small" sx={{ fontWeight: 600 }} />;
+    return <Chip label="Valid" color="success" size="small" sx={{ fontWeight: 600 }} />;
   };
+
   useEffect(() => {
     if (!resultDialog) {
-      resetAll(); // Akan dipanggil otomatis saat modal ditutup
+      resetAll();
     }
   }, [resultDialog]);
   
   return (
-    <>
-      {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
-
-      <Card className="mb-6 shadow-md">
-        <CardHeader title={
-          <Box className="flex items-center gap-2">
-            <i className="bi bi-cloud-upload-fill text-xl text-gray-600"></i>
-            <Typography variant="h6">Upload & Process STNK</Typography>
+    <Box className="space-y-6">
+      {/* Header Section */}
+      <Fade in={true} timeout={800}>
+        <Card className="shadow-lg rounded-2xl overflow-hidden">
+          <Box className="bg-gradient-to-r from-green-700 to-green-800 p-6">
+            <Box className="flex items-center gap-4">
+              <Box className="bg-white/10 p-3 rounded-full backdrop-blur-sm">
+                <CloudUpload sx={{ color: 'white', fontSize: 35 }} />
+              </Box>
+              <Box className="flex-1">
+                <Typography 
+                  variant="h5" 
+                  component="h1" 
+                  className="text-white font-bold mb-1"
+                >
+                  Upload & Process STNK
+                </Typography>
+                <Typography 
+                  variant="subtitle1" 
+                  className="text-green-100 font-medium"
+                >
+                  Upload dan proses dokumen STNK dengan teknologi OCR
+                </Typography>
+              </Box>
+              <Box className="hidden md:flex items-center gap-2">
+                <ImageIcon sx={{ color: 'white', fontSize: 32 }} />
+                <Upload sx={{ color: 'white', fontSize: 32 }} />
+              </Box>
+            </Box>
           </Box>
-        } />
-        <Divider />
-        <CardContent>
-          <Grid container direction="column" spacing={4}>
-            <Grid item>
-              <Box className="border-2 border-dashed rounded-lg p-8 text-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  ref={fileInputRef}
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="stnk-upload"
-                />
-                <label htmlFor="stnk-upload" className="cursor-pointer">
-                  <i className="bi bi-images text-5xl mb-4 block text-gray-400"></i>
-                  <Typography variant="h6" className="mb-2 font-medium">
+        </Card>
+      </Fade>
+
+      {error && (
+        <Fade in={true} timeout={600}>
+          <Alert severity="error" className="rounded-2xl" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        </Fade>
+      )}
+
+      {/* Upload Section */}
+      <Slide direction="up" in={true} timeout={600}>
+        <Card className="shadow-lg rounded-2xl">
+          <Box className="bg-green-50 p-4 border-b border-green-200">
+            <Box className="flex items-center gap-2">
+              <CloudUpload sx={{ color: '#166534', fontSize: 24 }} />
+              <Typography variant="h6" className="font-bold text-gray-800">
+                Upload Dokumen STNK
+              </Typography>
+            </Box>
+          </Box>
+          <CardContent className="p-6">
+            <Box className="border-2 border-dashed border-green-300 rounded-xl p-8 text-center bg-green-50/50 hover:bg-green-50 transition-colors duration-200">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                className="hidden"
+                id="stnk-upload"
+              />
+              <label htmlFor="stnk-upload" className="cursor-pointer">
+                <Box className="flex flex-col items-center">
+                  <Box className="bg-green-100 p-4 rounded-full mb-4">
+                    <ImageIcon sx={{ fontSize: 48, color: '#166534' }} />
+                  </Box>
+                  <Typography variant="h6" className="mb-2 font-bold text-gray-800">
                     Pilih Gambar STNK (max 10)
                   </Typography>
-                  <Typography variant="body2" className="text-gray-500 mb-2">
+                  <Typography variant="body1" className="text-gray-600 mb-2 font-medium">
                     {selectedImages.length > 0
                       ? `${selectedImages.length} gambar dipilih`
-                      : "Klik atau drag file gambar"}
+                      : "Klik atau drag file gambar ke area ini"}
                   </Typography>
-                  <Typography variant="caption" className="text-gray-400">
-                    Format: JPG, PNG, JPEG (Max 5MB)
+                  <Typography variant="body2" className="text-gray-500">
+                    Format: JPG, PNG, JPEG (Max 5MB per file)
                   </Typography>
-                </label>
-                {isProcessing && <Box className="mt-4"><CircularProgress size={24} /></Box>}
+                </Box>
+              </label>
+              {isProcessing && (
+                <Box className="mt-6 flex flex-col items-center">
+                  <CircularProgress size={32} sx={{ color: '#166534' }} />
+                  <Typography variant="body2" className="mt-2 text-gray-600 font-medium">
+                    Memproses gambar...
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+            
+            <Box className="mt-6 flex gap-3 justify-center">
+              <Button 
+                variant="contained"
+                startIcon={<CameraAlt />}
+                onClick={openCamera} 
+                disabled={isProcessing || selectedImages.length >= 10}
+                sx={{
+                  bgcolor: '#166534',
+                  '&:hover': {
+                    bgcolor: '#0f5132',
+                  },
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5,
+                }}
+              >
+                Ambil Foto
+              </Button>
+              <Button 
+                variant="outlined"
+                startIcon={<Refresh />}
+                onClick={resetAll} 
+                disabled={isProcessing || isSubmitting}
+                sx={{
+                  borderColor: '#166534',
+                  color: '#166534',
+                  '&:hover': {
+                    borderColor: '#0f5132',
+                    bgcolor: '#f0fdf4',
+                  },
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5,
+                }}
+              >
+                Reset
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Slide>
+
+      {/* Status Section */}
+      {selectedImages.length > 0 && (
+        <Fade in={true} timeout={800}>
+          <Card className="shadow-lg rounded-2xl">
+            <Box className="bg-green-50 p-4 border-b border-green-200">
+              <Box className="flex items-center justify-between">
+                <Box className="flex items-center gap-2">
+                  <PhotoCamera sx={{ color: '#166534', fontSize: 24 }} />
+                  <Typography variant="h6" className="font-bold text-gray-800">
+                    Status Upload
+                  </Typography>
+                </Box>
+                <Chip 
+                  label={`${selectedImages.length} file dipilih`}
+                  sx={{ 
+                    bgcolor: '#166534',
+                    color: 'white',
+                    fontWeight: 600,
+                  }}
+                />
               </Box>
-            </Grid>
-          </Grid>
-          <Box className="mt-6 flex gap-3">
-            <Button variant="contained" onClick={openCamera} disabled={isProcessing || selectedImages.length >= 10}>
-              <i className="bi bi-camera mr-2"></i> Ambil Foto
-            </Button>
-            <Button variant="outlined" onClick={resetAll} disabled={isProcessing || isSubmitting}>
-              <i className="bi bi-arrow-clockwise mr-2"></i> Reset
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+            </Box>
+            <CardContent className="p-6">
+              <Typography variant="body1" className="text-gray-700 font-medium">
+                {isProcessing ? 
+                  "Sedang memproses dokumen STNK..." : 
+                  `${selectedImages.length} gambar siap diproses`
+                }
+              </Typography>
+            </CardContent>
+          </Card>
+        </Fade>
+      )}
 
       <CameraDialog
         open={cameraDialog}
@@ -355,7 +480,7 @@ const STNKUpload = () => {
         onClose={() => setZoomDialog(false)}
         image={zoomedImage}
       />
-    </>
+    </Box>
   );
 };
 

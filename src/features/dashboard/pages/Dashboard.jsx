@@ -141,7 +141,7 @@ function Dashboard() {
               </Box>
               <Box className="flex-1">
                 <Typography 
-                  variant="h4" 
+                  variant="h5" 
                   component="h1" 
                   className="text-white font-bold mb-1"
                 >

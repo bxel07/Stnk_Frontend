@@ -194,7 +194,7 @@ const UserListPage = () => {
               </Box>
               <Box className="flex-1">
                 <Typography 
-                  variant="h4" 
+                  variant="h5" 
                   component="h1" 
                   className="text-white font-bold mb-1"
                 >
@@ -381,14 +381,19 @@ const UserListPage = () => {
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" className="text-gray-600">
-                            {getBrandName(u.brand_ids)}
+                          {getBrandName(
+  Array.isArray(u.otorisasi)
+    ? [...new Set(u.otorisasi.map((o) => o.brand_id))]
+    : []
+)}
+
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" className="text-gray-600">
-                            {getPtName(
+                          {getPtName(
                               Array.isArray(u.otorisasi) && u.otorisasi.length
-                                ? u.otorisasi.map((o) => o.pt_id)
+                                ? [...new Set(u.otorisasi.map((o) => o.pt_id))]
                                 : u.pt_id
                             )}
                           </Typography>
@@ -459,6 +464,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [selectedRoleName, setSelectedRoleName] = useState("");
+  const currentUser = useSelector((state) => state.auth.user);
 
   useEffect(() => {
     if (!userId || !open) return;
