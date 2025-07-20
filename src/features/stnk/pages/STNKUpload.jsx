@@ -30,7 +30,7 @@ if (!document.getElementById("swal-high-z-index-style")) {
 const STNKUpload = () => {
   const dispatch = useDispatch();
   const userRole = useSelector((state) => state.auth.user?.role);
-  console.log("User Role:", userRole);
+  // console.log("User Role:", userRole);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [scanResults, setScanResults] = useState([]);

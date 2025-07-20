@@ -97,22 +97,11 @@ const ResultDialog = ({
                     <Typography variant="subtitle2" className="mb-2 font-medium">
                       Preview Gambar
                     </Typography>
-                    {imagePreviews[idx] && (
-                      <Box className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
-                        <img
-                          src={imagePreviews[idx]}
-                          alt={`STNK Preview ${idx + 1}`}
-                          className="w-full h-48 object-cover hover:opacity-90 transition-opacity"
-                          onClick={() => handleImageZoom(imagePreviews[idx], `STNK #${idx + 1}`)}
-                        />
-                        <Box className="p-2 bg-gray-50 flex items-center justify-center">
-                          <Typography variant="caption" className="text-gray-600 flex items-center gap-1">
-                            <i className="bi bi-zoom-in"></i>
-                            Klik untuk memperbesar
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )}
+                   <img
+                      src={imagePreviews[idx]}
+                      alt={`STNK Preview ${idx + 1}`}
+                      style={{ transform: 'rotate(-90deg)', width: '100%', display: 'block' }}
+                    />
                   </Grid>
 
                   {/* Data STNK */}

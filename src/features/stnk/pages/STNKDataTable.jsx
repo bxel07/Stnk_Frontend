@@ -197,7 +197,7 @@ const STNKDataTable = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 2) {
+    if (activeTab === 1) {
       fetchInvalidData();
     }
   }, [activeTab, fetchInvalidData]);
@@ -318,25 +318,33 @@ const STNKDataTable = () => {
     setEditRecord(null);
   };
 
+  // OPTION 4: Dengan delay untuk user experience yang lebih baik
   const handleEditSubmit = () => {
-    if (!editRecord?.id) return;
-
-    dispatch(updateStnkInfoThunk({
-      id: editRecord.id,
-      data: {
-        nomor_rangka: editRecord.nomor_rangka,
-        jumlah: editRecord.jumlah,
-        kode_samsat: editRecord.kode_samsat
-      }
-    }))
-      .unwrap()
-      .then(() => {
-        toast.success("Data berhasil diperbarui");
-        setEditDialogOpen(false);
-      })
-      .catch((err) => {
-        toast.error(err.message || "Gagal memperbarui data");
-      });
+      if (!editRecord?.id) return;
+  
+      dispatch(updateStnkInfoThunk({
+        id: editRecord.id,
+        data: {
+          nomor_rangka: editRecord.nomor_rangka,
+          jumlah: editRecord.jumlah,
+          kode_samsat: editRecord.kode_samsat
+        }
+      }))
+        .unwrap()
+        .then(() => {
+          toast.success("Data berhasil diperbarui");
+          setEditDialogOpen(false);
+          
+          // Delay sebentar untuk user experience
+          setTimeout(() => {
+            // Pilih salah satu:
+            window.location.reload(); // atau
+            // dispatch(fetchStnkDataThunk());
+          }, 500);
+        })
+        .catch((err) => {
+          toast.error(err.message || "Gagal memperbarui data");
+        });
   };
 
   const renderFilter = () => (
@@ -693,22 +701,6 @@ const STNKDataTable = () => {
                                   <Edit fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                            {activeTab === 1 && (
-                              <Tooltip title="Edit Koreksi">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleEditCorrection(row)}
-                                  sx={{ 
-                                    color: '#166534',
-                                    '&:hover': { 
-                                      backgroundColor: '#f0fdf4' 
-                                    }
-                                  }}
-                                >
-                                  <Assignment fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
                           </Box>
                         </TableCell>
                       </TableRow>
@@ -795,14 +787,6 @@ const STNKDataTable = () => {
       )}
 
       {activeTab === 1 && renderTable(
-        filteredCorrectionData,
-        correctionLoading,
-        correctionError,
-        "Data STNK Koreksi",
-        "Belum ada data koreksi STNK"
-      )}
-
-      {activeTab === 2 && renderTable(
         invalidData,
         invalidLoading,
         invalidError,
@@ -856,14 +840,26 @@ const STNKDataTable = () => {
               <Grid item xs={12}>
                 {/* Gambar Preview */}
                 {selectedRecord?.image_url && (
-                  <Box className="text-center mb-6">
-                    <Paper elevation={2} className="p-4 rounded-2xl inline-block">
-                      <ProtectedImage
-                        path={selectedRecord.image_url}
-                        alt="Gambar STNK"
-                        className="max-h-64 mx-auto rounded-xl shadow cursor-zoom-in hover:opacity-80 transition-opacity"
-                        onClick={() => handleZoomImage(`${selectedRecord.image_url}`)}
-                      />
+                  <Box className="mb-6 w-full">
+                    <Paper elevation={2} className="p-4 rounded-2xl w-full overflow-hidden">
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        minHeight: '400px'
+                      }}>
+                        <ProtectedImage
+                          path={selectedRecord.image_url}
+                          alt="Gambar STNK"
+                          className="rounded-xl shadow"
+                          style={{ 
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: 'center center',
+                            maxWidth: '100%',
+                            height: 'auto'
+                          }}
+                        />
+                      </div>
                     </Paper>
                   </Box>
                 )}
@@ -1029,16 +1025,24 @@ const STNKDataTable = () => {
             <Box className="space-y-6">
               {/* Image Preview */}
               {editRecord.image_url && (
-                <Box className="text-center">
-                  <Paper elevation={2} className="p-4 rounded-2xl inline-block">
+              <Box className="mb-6 w-full">
+                <Paper elevation={2} className="p-4 rounded-2xl w-full">
+                  <div 
+                    className="flex justify-center items-center"
+                    style={{ 
+                      transform: 'rotate(-90deg)',
+                      transformOrigin: 'center',
+                      minHeight: '400px'
+                    }}
+                  >
                     <ProtectedImage
                       path={editRecord.image_url}
                       alt="Pratinjau"
-                      className="max-h-48 w-auto cursor-zoom-in hover:opacity-90 transition-opacity rounded-xl"
-                      onClick={() => handleZoomImage(editRecord.image_url)}
+                      className="rounded-xl shadow max-w-full h-auto"
                     />
-                  </Paper>
-                </Box>
+                  </div>
+                </Paper>
+              </Box>
               )}
 
               {/* Form Fields */}

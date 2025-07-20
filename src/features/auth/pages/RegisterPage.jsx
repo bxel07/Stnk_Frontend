@@ -50,10 +50,6 @@ const RegisterPage = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (!user || (user.role !== "admin" && user.role !== "superadmin" && user.role !== "cao")) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -74,6 +70,10 @@ const RegisterPage = () => {
       .then((res) => setSamsatList(res.data.data || []))
       .catch(() => setSamsatList([]));
   }, []);
+
+  if (!user || (user.role !== "admin" && user.role !== "superadmin" && user.role !== "cao")) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
