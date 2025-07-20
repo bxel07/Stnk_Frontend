@@ -139,18 +139,23 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
       if (roleName === "cao" && form.glbm_brand_ids.length !== 1) {
         throw new Error("CAO hanya boleh memilih 1 brand");
       }
+      if (!form.glbm_samsat_id || form.glbm_samsat_id.length === 0) {
+        throw new Error("Pilih minimal satu Samsat");
+      }
+      
 
       const payload = {
         username: form.username,
         gmail: form.gmail,
-        password: "12345678", // default
+        password: "12345678",
         role_id: Number(form.role_id),
         nama_lengkap: form.nama_lengkap,
         nomor_telepon: form.nomor_telepon,
-        glbm_samsat_id: Number(form.glbm_samsat_id),
+        glbm_samsat_id: form.glbm_samsat_id.map(Number),
         glbm_pt_id: form.glbm_pt_id.map(Number),
         glbm_brand_ids: form.glbm_brand_ids.map(Number),
       };
+      
       console.log("Payload register user:", payload);
       await axios.post(`${baseUrl}/api/register`, payload, config);
       Swal.fire({
@@ -330,121 +335,159 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
             <Grid container spacing={2}>
               {/* PT */}
               {["superadmin", "admin"].includes(getRoleName()) && (
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>
-                      PT {getRoleName() === "superadmin" ? "(Multiple)" : ""}
-                    </InputLabel>
-                    <Select
-                      name="glbm_pt_id"
-                      multiple={getRoleName() === "superadmin"}
-                      value={
-                        getRoleName() === "superadmin" ? form.glbm_pt_id : form.glbm_pt_id[0] || ""
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setForm((prev) => ({
-                          ...prev,
-                          glbm_pt_id: getRoleName() === "superadmin" ? value : [value],
-                        }));
-                      }}
-                      sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
-                    >
-                      {ptList.map((pt) => (
-                        <MenuItem key={pt.id} value={pt.id}>
-                          <Box className="flex items-center gap-2">
-                            <Business sx={{ color: "#166534", fontSize: 16 }} /> {pt.nama_pt}
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+  <Grid item xs={12} md={6}>
+    <FormControl fullWidth margin="normal">
+      <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>
+        PT {getRoleName() === "superadmin" ? "(Multiple)" : ""}
+      </InputLabel>
+      <Select
+        name="glbm_pt_id"
+        multiple={getRoleName() === "superadmin"}
+        value={
+          getRoleName() === "superadmin"
+            ? form.glbm_pt_id
+            : form.glbm_pt_id[0] || ""
+        }
+        onChange={(e) => {
+          const value = e.target.value;
+          setForm((prev) => ({
+            ...prev,
+            glbm_pt_id:
+              getRoleName() === "superadmin" ? value : [value],
+          }));
+        }}
+        sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
+      >
+        {ptList.map((pt) => (
+          <MenuItem key={pt.id} value={pt.id}>
+            <Box className="flex items-center gap-2">
+              <Business sx={{ color: "#166534", fontSize: 16 }} /> {pt.nama_pt}
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
-                  {/* Chips Superadmin */}
-                  {getRoleName() === "superadmin" && form.glbm_pt_id.length > 0 && (
-                    <Box className="mt-2 flex flex-wrap gap-1">
-                      {form.glbm_pt_id.map((ptId) => {
-                        const pt = ptList.find((p) => p.id === ptId);
-                        return pt ? (
-                          <Chip
-                            key={ptId}
-                            label={pt.nama_pt}
-                            size="small"
-                            sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-                          />
-                        ) : null;
-                      })}
-                    </Box>
-                  )}
-                </Grid>
-              )}
+    {/* Chips Superadmin */}
+    {getRoleName() === "superadmin" && form.glbm_pt_id.length > 0 && (
+      <Box className="mt-2 flex flex-wrap gap-1">
+        {form.glbm_pt_id.map((ptId) => {
+          const pt = ptList.find((p) => p.id === ptId);
+          return pt ? (
+            <Chip
+              key={ptId}
+              label={pt.nama_pt}
+              size="small"
+              sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
+            />
+          ) : null;
+        })}
+      </Box>
+    )}
+  </Grid>
+)}
 
-              {/* Brand */}
-              {getRoleName() !== "user" && (
-                <Grid item xs={12} md={getRoleName() === "cao" ? 12 : 6}>
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>
-                      Brand {getRoleName() === "cao" ? "" : "(Multiple)"}
-                    </InputLabel>
-                    <Select
-                      multiple
-                      name="glbm_brand_ids"
-                      value={form.glbm_brand_ids}
-                      onChange={(e) => setForm((prev) => ({ ...prev, glbm_brand_ids: e.target.value }))}
-                      sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
-                    >
-                      {brandList.map((b) => (
-                        <MenuItem key={b.id} value={b.id}>
-                          <Box className="flex items-center gap-2">
-                            <Label sx={{ color: "#166534", fontSize: 16 }} /> {b.nama_brand}
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+           {/* Brand */}
+{["superadmin", "admin", "cao"].includes(getRoleName()) && (
+  <Grid item xs={12} md={getRoleName() === "cao" ? 12 : 6}>
+    <FormControl fullWidth margin="normal">
+      <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>
+        Brand {getRoleName() === "cao" ? "" : "(Multiple)"}
+      </InputLabel>
+      <Select
+        name="glbm_brand_ids"
+        multiple={getRoleName() !== "cao"}
+        value={
+          getRoleName() === "cao"
+            ? form.glbm_brand_ids[0] || ""
+            : form.glbm_brand_ids
+        }
+        onChange={(e) => {
+          const value = e.target.value;
+          setForm((prev) => ({
+            ...prev,
+            glbm_brand_ids:
+              getRoleName() === "cao" ? [value] : value,
+          }));
+        }}
+        sx={{
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#166534",
+          },
+        }}
+      >
+        {brandList.map((b) => (
+          <MenuItem key={b.id} value={b.id}>
+            <Box className="flex items-center gap-2">
+              <Label sx={{ color: "#166534", fontSize: 16 }} /> {b.nama_brand}
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
 
-                  {form.glbm_brand_ids.length > 0 && (
-                    <Box className="mt-2 flex flex-wrap gap-1">
-                      {form.glbm_brand_ids.map((brandId) => {
-                        const brand = brandList.find((b) => b.id === brandId);
-                        return brand ? (
-                          <Chip
-                            key={brandId}
-                            label={brand.nama_brand}
-                            size="small"
-                            sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-                          />
-                        ) : null;
-                      })}
-                    </Box>
-                  )}
-                </Grid>
-              )}
+    {/* Brand Chips */}
+    {form.glbm_brand_ids.length > 0 && (
+      <Box className="mt-2 flex flex-wrap gap-1">
+        {form.glbm_brand_ids.map((brandId) => {
+          const brand = brandList.find((b) => b.id === brandId);
+          return brand ? (
+            <Chip
+              key={brandId}
+              label={brand.nama_brand}
+              size="small"
+              sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
+            />
+          ) : null;
+        })}
+      </Box>
+    )}
+  </Grid>
+)}
 
               {/* Samsat */}
               <Grid item xs={12}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>Samsat</InputLabel>
-                  <Select
-                    name="glbm_samsat_id"
-                    value={form.glbm_samsat_id}
-                    onChange={handleChange}
-                    sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
-                  >
-                    {samsatList.map((s) => (
-                      <MenuItem key={s.id} value={s.id}>
-                        <Box className="flex items-center gap-2">
-                          <LocationOn sx={{ color: "#166534", fontSize: 16 }} />
-                          <span>
-                            {s.wilayah}/{s.wilayah_cakupan}/{s.nama_samsat} (#{s.kode_samsat})
-                          </span>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
+  <FormControl fullWidth margin="normal">
+    <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>Samsat</InputLabel>
+    <Select
+      name="glbm_samsat_id"
+      multiple
+      value={form.glbm_samsat_id || []}
+      onChange={(e) =>
+        setForm((prev) => ({ ...prev, glbm_samsat_id: e.target.value }))
+      }
+      sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
+    >
+      {samsatList.map((s) => (
+        <MenuItem key={s.id} value={s.id}>
+          <Box className="flex items-center gap-2">
+            <LocationOn sx={{ color: "#166534", fontSize: 16 }} />
+            <span>
+              {s.wilayah}/{s.wilayah_cakupan}/{s.nama_samsat} (#{s.kode_samsat})
+            </span>
+          </Box>
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+
+  {Array.isArray(form.glbm_samsat_id) && form.glbm_samsat_id.length > 0 && (
+    <Box className="mt-2 flex flex-wrap gap-1">
+      {form.glbm_samsat_id.map((samsatId) => {
+        const s = samsatList.find((item) => item.id === samsatId);
+        return s ? (
+          <Chip
+            key={samsatId}
+            label={`${s.nama_samsat} (#${s.kode_samsat})`}
+            size="small"
+            sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
+          />
+        ) : null;
+      })}
+    </Box>
+  )}
+</Grid>
+</Grid>
           </Box>
 
           {/* ==== Password Info ==================================== */}

@@ -338,16 +338,18 @@ const UserListPage = () => {
                     <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Username</TableCell>
                     <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Email</TableCell>
                     <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Role</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Brand</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>PT</TableCell>
                     <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Aksi</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredUsers.map((u, i) => {
-                    const brandIds = u.otorisasi?.map((o) => o.brand_id) || [];
-                    const ptIds = u.otorisasi?.map((o) => o.pt_id) || [];
-                    
+                    const brandIds = Array.isArray(u.otorisasi)
+                    ? u.otorisasi.map((o) => o.brand_id)
+                    : [];
+                  
+                  const ptIds = Array.isArray(u.otorisasi)
+                    ? u.otorisasi.map((o) => o.pt_id)
+                    : [];                  
                     return (
                       <TableRow 
                         key={u.id}
@@ -378,25 +380,6 @@ const UserListPage = () => {
                               sx={{ fontWeight: 600 }}
                             />
                           </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" className="text-gray-600">
-                          {getBrandName(
-  Array.isArray(u.otorisasi)
-    ? [...new Set(u.otorisasi.map((o) => o.brand_id))]
-    : []
-)}
-
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" className="text-gray-600">
-                          {getPtName(
-                              Array.isArray(u.otorisasi) && u.otorisasi.length
-                                ? [...new Set(u.otorisasi.map((o) => o.pt_id))]
-                                : u.pt_id
-                            )}
-                          </Typography>
                         </TableCell>
                         <TableCell>
                           <Button 
@@ -455,7 +438,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
     username: "",
     gmail: "",
     role_id: "",
-    otorisasi: [{ pt_id: "", brand_id: "" }],
+    otorisasi: [{ pt_id: [], brand_id: [], glbm_samsat_id: [] }],
   });
 
   const [roles, setRoles] = useState([]);
@@ -463,6 +446,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
   const [brandList, setBrandList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  const [samsatList, setSamsatList] = useState([]); 
   const [selectedRoleName, setSelectedRoleName] = useState("");
   const currentUser = useSelector((state) => state.auth.user);
 
@@ -472,17 +456,18 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [roleRes, ptRes, brandRes, allUsersRes] = await Promise.all([
+        const [roleRes, ptRes, brandRes, allUsersRes, samsatRes] = await Promise.all([
           axios.get(`${BASE_URL}/roles`, config),
           axios.get(`${BASE_URL}/glbm-pt`, config),
           axios.get(`${BASE_URL}/glbm-brand`, config),
           axios.get(`${BASE_URL}/users`, config),
+          axios.get(`${BASE_URL}/glbm-samsat`, config),
         ]);
   
         setRoles(roleRes.data);
         setPtList(ptRes.data.data || []);
         setBrandList(brandRes.data.data || []);
-  
+        setSamsatList(samsatRes.data.data || []);
         const userList = allUsersRes.data.data || [];
         const u = userList.find((item) => item.id === userId);
   
@@ -499,11 +484,17 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
           role_id: u.role_id || "",
           otorisasi: originalOtorisasi.length > 0
             ? originalOtorisasi.map((o) => ({
-              pt_id: o.pt_id,
-              brand_id: o.brand_id,
-            }))            
-            : [{ pt_id: u.pt_id || "", brand_id: u.brand_id || "" }],
+                pt_id: Array.isArray(o.pt_id) ? o.pt_id : [o.pt_id],
+                brand_id: Array.isArray(o.brand_id) ? o.brand_id : [o.brand_id],
+                glbm_samsat_id: Array.isArray(o.glbm_samsat_id) ? o.glbm_samsat_id : [o.glbm_samsat_id],
+              }))
+            : [{
+                pt_id: Array.isArray(u.pt_id) ? u.pt_id : [u.pt_id],
+                brand_id: Array.isArray(u.brand_id) ? u.brand_id : [u.brand_id],
+                glbm_samsat_id: [],
+              }]
         });
+        
   
         setErrorMsg("");
       } catch (err) {
@@ -535,9 +526,14 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
 
   const handleOtorisasiChange = (i, field, value) => {
     const newOtorisasi = [...form.otorisasi];
-    newOtorisasi[i][field] = value;
+  
+    // pastikan array jika multiple
+    const ensuredArray = Array.isArray(value) ? value : [value];
+    newOtorisasi[i][field] = ensuredArray;
+  
     setForm({ ...form, otorisasi: newOtorisasi });
   };
+  
 
   const handleSubmit = async () => {
     try {
@@ -546,11 +542,18 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
         gmail: form.gmail,
         role_id: parseInt(form.role_id),
         otorisasi: form.otorisasi.map((o) => ({
-          pt_id: o.pt_id ? parseInt(o.pt_id) : null,
-          brand_id: o.brand_id ? parseInt(o.brand_id) : null,
+          pt_id: (Array.isArray(o.pt_id) ? o.pt_id : [o.pt_id])
+            .filter((id) => id !== null && id !== undefined)
+            .map(Number),
+          brand_id: (Array.isArray(o.brand_id) ? o.brand_id : [o.brand_id])
+            .filter((id) => id !== null && id !== undefined)
+            .map(Number),
+          glbm_samsat_id: (Array.isArray(o.glbm_samsat_id) ? o.glbm_samsat_id : [o.glbm_samsat_id])
+            .filter((id) => id !== null && id !== undefined)
+            .map(Number),
         })),
-      };
-      
+      };      
+      console.log(payload);
       await axios.put(`${BASE_URL}/update-user/${userId}`, payload, config);
       onSaved();
       onClose();
@@ -672,56 +675,84 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
               
               {form.otorisasi.map((otor, i) => (
                 <Grid container spacing={2} alignItems="center" key={i} className="mb-3">
+                  <Grid item xs={12}>
+              <FormControl fullWidth margin="dense">
+                <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                  Samsat
+                </InputLabel>
+                <Select
+                  multiple
+                  value={otor.glbm_samsat_id}
+                  onChange={(e) => handleOtorisasiChange(i, "glbm_samsat_id", e.target.value)}
+                  label="Samsat"
+                  sx={{
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#166534',
+                    },
+                  }}
+                >
+                  {/** Pastikan kamu sudah punya state samsatList */}
+                  {samsatList.map((s) => (
+                    <MenuItem key={s.id} value={s.id}>
+                    {s.wilayah}/{s.wilayah_cakupan}/{s.nama_samsat} (#{s.kode_samsat})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
                   {(selectedRoleName !== "cao" && selectedRoleName !== "user") && (
-                    <Grid item xs={6}>
-                      <FormControl fullWidth margin="dense">
-                        <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
-                          PT
-                        </InputLabel>
-                        <Select
-                          value={otor.pt_id}
-                          onChange={(e) => handleOtorisasiChange(i, "pt_id", e.target.value)}
-                          label="PT"
-                          sx={{
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#166534',
-                            },
-                          }}
-                        >
-                          {ptList.map((pt) => (
-                            <MenuItem key={pt.id} value={pt.id}>
-                              {pt.nama_pt}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
+                    <Grid item xs={12} md={selectedRoleName === "superadmin" ? 6 : 12}>
+                    <FormControl fullWidth margin="dense">
+                      <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                        PT
+                      </InputLabel>
+                      <Select
+                        multiple={selectedRoleName === "superadmin"}
+                        value={otor.pt_id}
+                        onChange={(e) => handleOtorisasiChange(i, "pt_id", e.target.value)}
+                        label="PT"
+                        sx={{
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#166534',
+                          },
+                        }}
+                      >
+                        {ptList.map((pt) => (
+                          <MenuItem key={pt.id} value={pt.id}>
+                            {pt.nama_pt}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>                  
                   )}
                   
                   {(selectedRoleName === "cao" || selectedRoleName === "admin" || selectedRoleName === "superadmin") && (
-                    <Grid item xs={selectedRoleName === "cao" ? 12 : 6}>
-                      <FormControl fullWidth margin="dense">
-                        <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
-                          Brand
-                        </InputLabel>
-                        <Select
-                          value={otor.brand_id}
-                          onChange={(e) => handleOtorisasiChange(i, "brand_id", e.target.value)}
-                          label="Brand"
-                          sx={{
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#166534',
-                            },
-                          }}
-                        >
-                          {brandList.map((b) => (
-                            <MenuItem key={b.id} value={b.id}>
-                              {b.nama_brand}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
+                    <Grid item xs={12} md={6}>
+                    <FormControl fullWidth margin="dense">
+                      <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                        Brand
+                      </InputLabel>
+                      <Select
+                        multiple={["superadmin", "admin"].includes(selectedRoleName)}
+                        value={otor.brand_id}
+                        onChange={(e) => handleOtorisasiChange(i, "brand_id", e.target.value)}
+                        label="Brand"
+                        sx={{
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#166534',
+                          },
+                        }}
+                      >
+                        {brandList.map((b) => (
+                          <MenuItem key={b.id} value={b.id}>
+                            {b.nama_brand}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>                  
                   )}
                 </Grid>
               ))}

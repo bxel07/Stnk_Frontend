@@ -11,6 +11,8 @@ import {
 } from "@mui/icons-material";
 import { loginUser } from "@/slices/loginSlice";
 import { setCredentials } from "@/slices/authSlice";
+import { useSelector } from "react-redux";
+import { useEffect } from "react";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -41,6 +43,15 @@ function LoginPage() {
       setLoading(false);
     }
   };
+  const auth = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    const user = localStorage.getItem("user");
+    if (token && user) {
+      navigate("/dashboard"); // redirect ke dashboard kalau sudah login
+    }
+  }, []);
 
   const inputStyle = {
     '& .MuiOutlinedInput-root': {

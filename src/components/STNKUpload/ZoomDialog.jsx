@@ -1,54 +1,76 @@
-// ZoomDialog.jsx
-import { Box, Dialog, DialogContent, IconButton, Typography } from "@mui/material";
+import { Dialog, IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { useEffect, useRef, useState } from "react";
 
 const ZoomDialog = ({ open, onClose, image }) => {
+  const imgRef = useRef(null);
+  const [isPortrait, setIsPortrait] = useState(false);
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      const img = imgRef.current;
+      if (img && img.naturalHeight > img.naturalWidth) {
+        setIsPortrait(true); // portrait, rotate to left (counter-clockwise)
+      } else {
+        setIsPortrait(false); // landscape, no rotation
+      }
+    };
+
+    if (open) {
+      const timeout = setTimeout(checkOrientation, 100); // wait for image load
+      return () => clearTimeout(timeout);
+    }
+  }, [open, image]);
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="lg"
-      fullWidth
+      fullScreen
       PaperProps={{
-        style: { backgroundColor: 'transparent', boxShadow: 'none' },
+        style: {
+          backgroundColor: "black",
+          margin: 0,
+        },
       }}
     >
-      <DialogContent className="p-0 bg-black/90 min-h-[90vh] flex items-center justify-center">
-        <Box className="relative w-full h-full flex flex-col items-center justify-center">
-          {/* Header */}
-          <Box className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-            <Typography variant="h6" className="text-white font-medium">
-              {image.title}
-            </Typography>
-            <IconButton
-              onClick={onClose}
-              className="text-white bg-black/50 hover:bg-black/70"
-              size="large"
-            >
-              <i className="bi bi-x-lg text-xl"></i>
-            </IconButton>
-          </Box>
+      {/* Tombol Close */}
+      <IconButton
+        onClick={onClose}
+        sx={{
+          position: "fixed",
+          top: 16,
+          right: 16,
+          zIndex: 9999,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          color: "white",
+          "&:hover": {
+            backgroundColor: "rgba(0,0,0,0.7)",
+          },
+        }}
+        size="large"
+      >
+        <CloseIcon />
+      </IconButton>
 
-          {/* Zoomed Image */}
-          <Box className="relative w-full h-full flex items-center justify-center p-8">
-            {image.src && (
-              <img
-                src={image.src}
-                alt={image.title}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                style={{ maxHeight: '85vh' }}
-              />
-            )}
-          </Box>
-
-          {/* Footer */}
-          <Box className="absolute bottom-4 left-4 right-4 text-center">
-            <Typography variant="body2" className="text-white/80">
-              <i className="bi bi-info-circle mr-2"></i>
-              Klik di luar gambar atau tombol ✕ untuk menutup
-            </Typography>
-          </Box>
-        </Box>
-      </DialogContent>
+      {/* Gambar dengan rotasi jika portrait */}
+      <img
+  ref={imgRef}
+  src={image.src}
+  alt={image.title}
+  onClick={onClose}
+  style={{
+    width: isPortrait ? "100vh" : "100vw",
+    height: isPortrait ? "100vw" : "100vh",
+    transform: isPortrait ? "rotate(-90deg)" : "none",
+    transformOrigin: "center center",
+    display: "block",
+    margin: "auto",
+    objectFit: "cover", // ganti dari 'contain' jadi 'cover'
+    backgroundColor: "black",
+    cursor: "zoom-out",
+  }}
+/>
     </Dialog>
   );
 };

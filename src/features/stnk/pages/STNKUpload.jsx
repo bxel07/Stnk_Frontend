@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { 
   Card, CardContent, CardHeader, Typography, Button, Grid, Box, Chip, 
-  CircularProgress, Alert, Divider, Fade, Slide, Paper
+  CircularProgress, Alert, Divider, Fade, Slide, Paper, Avatar
 } from "@mui/material";
 import { 
   CloudUpload, 
@@ -397,7 +397,7 @@ const STNKUpload = () => {
         </Card>
       </Slide>
 
-      {/* Status Section */}
+      {/* Image Preview Section - Display full images immediately */}
       {selectedImages.length > 0 && (
         <Fade in={true} timeout={800}>
           <Card className="shadow-lg rounded-2xl">
@@ -406,7 +406,7 @@ const STNKUpload = () => {
                 <Box className="flex items-center gap-2">
                   <PhotoCamera sx={{ color: '#166534', fontSize: 24 }} />
                   <Typography variant="h6" className="font-bold text-gray-800">
-                    Status Upload
+                    Gambar STNK
                   </Typography>
                 </Box>
                 <Chip 
@@ -420,12 +420,50 @@ const STNKUpload = () => {
               </Box>
             </Box>
             <CardContent className="p-6">
-              <Typography variant="body1" className="text-gray-700 font-medium">
-                {isProcessing ? 
-                  "Sedang memproses dokumen STNK..." : 
-                  `${selectedImages.length} gambar siap diproses`
-                }
-              </Typography>
+              <Grid container spacing={3}>
+                {imagePreviews.map((preview, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Paper 
+                      elevation={3} 
+                      className="rounded-xl overflow-hidden"
+                      onClick={() => {
+                        setZoomedImage({ src: preview, title: `STNK ${index + 1}` });
+                        setZoomDialog(true);
+                      }}
+                      sx={{
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s',
+                        '&:hover': {
+                          transform: 'scale(1.02)',
+                        }
+                      }}
+                    >
+                      <Box className="relative pt-[100%]">
+                        <Avatar
+                          variant="square"
+                          src={preview}
+                          alt={`STNK Preview ${index + 1}`}
+                          sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: '12px',
+                            objectFit: 'contain',
+                            bgcolor: '#f0f0f0'
+                          }}
+                        />
+                      </Box>
+                      <Box className="p-3 bg-white">
+                        <Typography variant="subtitle2" className="font-semibold text-center">
+                          STNK {index + 1}
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
             </CardContent>
           </Card>
         </Fade>
