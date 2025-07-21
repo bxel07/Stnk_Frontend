@@ -52,10 +52,12 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
     glbm_samsat_id: "",
   });
 
+  
   const getRoleName = () => {
     const r = roles.find((r) => r.id === form.role_id);
     return r?.name || "";
   };
+  const isSelectedUserRole = getRoleName().toLowerCase() === "user";
 
   const getRoleIcon = (roleName) => {
     const iconProps = { fontSize: "small", sx: { color: "#166534" } };
@@ -142,6 +144,9 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
       if (!form.glbm_samsat_id || form.glbm_samsat_id.length === 0) {
         throw new Error("Pilih minimal satu Samsat");
       }
+      if (getRoleName().toLowerCase() === "user" && Array.isArray(form.glbm_samsat_id)) {
+        throw new Error("User hanya boleh memilih 1 Samsat");
+      }      
       
 
       const payload = {
@@ -151,7 +156,9 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
         role_id: Number(form.role_id),
         nama_lengkap: form.nama_lengkap,
         nomor_telepon: form.nomor_telepon,
-        glbm_samsat_id: form.glbm_samsat_id.map(Number),
+        glbm_samsat_id: Array.isArray(form.glbm_samsat_id)
+        ? form.glbm_samsat_id.map(Number)
+        : [Number(form.glbm_samsat_id)],      
         glbm_pt_id: form.glbm_pt_id.map(Number),
         glbm_brand_ids: form.glbm_brand_ids.map(Number),
       };
@@ -181,6 +188,8 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
     },
     "& .MuiInputLabel-root.Mui-focused": { color: "#166534" },
   };
+ const isUserRole = getRoleName().toLowerCase() === "user";
+
 
 
   return (
@@ -450,13 +459,25 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
   <FormControl fullWidth margin="normal">
     <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>Samsat</InputLabel>
     <Select
-      name="glbm_samsat_id"
-      multiple
-      value={form.glbm_samsat_id || []}
-      onChange={(e) =>
-        setForm((prev) => ({ ...prev, glbm_samsat_id: e.target.value }))
-      }
-      sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
+  name="glbm_samsat_id"
+  multiple={!isUserRole}
+  value={isUserRole ? form.glbm_samsat_id : form.glbm_samsat_id || []}
+  onChange={(e) => {
+    const value = e.target.value;
+    setForm((prev) => ({
+      ...prev,
+      glbm_samsat_id: isUserRole
+        ? value
+        : Array.isArray(value)
+        ? value
+        : [value],
+    }));
+  }}
+      sx={{
+        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+          borderColor: "#166534",
+        },
+      }}
     >
       {samsatList.map((s) => (
         <MenuItem key={s.id} value={s.id}>
@@ -471,21 +492,21 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
     </Select>
   </FormControl>
 
-  {Array.isArray(form.glbm_samsat_id) && form.glbm_samsat_id.length > 0 && (
-    <Box className="mt-2 flex flex-wrap gap-1">
-      {form.glbm_samsat_id.map((samsatId) => {
-        const s = samsatList.find((item) => item.id === samsatId);
-        return s ? (
-          <Chip
-            key={samsatId}
-            label={`${s.nama_samsat} (#${s.kode_samsat})`}
-            size="small"
-            sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-          />
-        ) : null;
-      })}
-    </Box>
-  )}
+  {!isUserRole && Array.isArray(form.glbm_samsat_id) && form.glbm_samsat_id.length > 0 && (
+  <Box className="mt-2 flex flex-wrap gap-1">
+    {form.glbm_samsat_id.map((samsatId) => {
+      const s = samsatList.find((item) => item.id === samsatId);
+      return s ? (
+        <Chip
+          key={samsatId}
+          label={`${s.nama_samsat} (#${s.kode_samsat})`}
+          size="small"
+          sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
+        />
+      ) : null;
+    })}
+  </Box>
+)}
 </Grid>
 </Grid>
           </Box>

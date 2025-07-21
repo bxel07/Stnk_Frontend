@@ -78,6 +78,8 @@ const STNKDataTable = () => {
   const [invalidData, setInvalidData] = useState([]);
   const [invalidLoading, setInvalidLoading] = useState(false);
   const [invalidError, setInvalidError] = useState(null);
+  const [filteredInvalidData, setFilteredInvalidData] = useState([]);
+  
   
   // Filter states
   const [kodeSamsatFilter, setKodeSamsatFilter] = useState('');
@@ -86,7 +88,8 @@ const STNKDataTable = () => {
   const [brandFilter, setBrandFilter] = useState('');
   const [uniquePT, setUniquePT] = useState([]);
   const [uniqueBrand, setUniqueBrand] = useState([]);
-
+  
+  
   // State for correction form
   const [correctionForm, setCorrectionForm] = useState({
     nomor_rangka: '',
@@ -104,6 +107,18 @@ const STNKDataTable = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [filteredCorrectionData, setFilteredCorrectionData] = useState([]);
   const [dateFilterLoading, setDateFilterLoading] = useState(false);
+  
+  // const filteredInvalidData = invalidData.filter((item) => {
+  //   const matchesSearch = item.nomor_rangka
+  //     ?.toLowerCase()
+  //     .includes(searchText.toLowerCase());
+  
+  //   const matchesPT = !selectedPT || item.nama_pt === selectedPT;
+  //   const matchesBrand = !selectedBrand || item.nama_brand === selectedBrand;
+  
+  //   return matchesSearch && matchesPT && matchesBrand;
+  // });
+  
 
   // Image zoom state
   const [zoomImage, setZoomImage] = useState(null);
@@ -160,6 +175,68 @@ const STNKDataTable = () => {
 
     setFilteredData(filtered);
   }, [stnkData, kodeSamsatFilter, ptFilter, brandFilter, dateFilter]);
+  // Filter invalid data based on filters
+useEffect(() => {
+  if (!Array.isArray(invalidData)) return;
+
+  let filtered = [...invalidData];
+
+  if (kodeSamsatFilter && kodeSamsatFilter !== "all") {
+    filtered = filtered.filter(item => item.kode_samsat === kodeSamsatFilter);
+  }
+
+  if (ptFilter) {
+    filtered = filtered.filter(item => item.nama_pt === ptFilter);
+  }
+
+  if (brandFilter) {
+    filtered = filtered.filter(item => item.nama_brand === brandFilter);
+  }
+
+  if (dateFilter.filterType === "today") {
+    const todayStr = new Date().toISOString().split("T")[0];
+    filtered = filtered.filter(item => {
+      const created = new Date(item.created_at).toISOString().split("T")[0];
+      return created === todayStr;
+    });
+  } else if (dateFilter.filterType === "yesterday") {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+    filtered = filtered.filter(item => {
+      const created = new Date(item.created_at).toISOString().split("T")[0];
+      return created === yesterdayStr;
+    });
+  } else if (
+    dateFilter.filterType === "custom" &&
+    dateFilter.selectedDate
+  ) {
+    const selectedDateStr = new Date(dateFilter.selectedDate).toISOString().split("T")[0];
+    filtered = filtered.filter(item => {
+      const createdDateStr = new Date(item.created_at).toISOString().split("T")[0];
+      return createdDateStr === selectedDateStr;
+    });
+  }
+
+  setFilteredInvalidData(filtered);
+}, [invalidData, kodeSamsatFilter, ptFilter, brandFilter, dateFilter]);
+// Get unique values for filters
+useEffect(() => {
+  const allData = [
+    ...(Array.isArray(stnkData) ? stnkData : []),
+    ...(Array.isArray(invalidData) ? invalidData : [])
+  ];
+
+  if (allData.length === 0) return;
+
+  const uniqueSamsat = [...new Set(allData.map(item => item.kode_samsat).filter(Boolean))];
+  const uniquePT = [...new Set(allData.map(item => item.nama_pt).filter(Boolean))];
+  const uniqueBrand = [...new Set(allData.map(item => item.nama_brand).filter(Boolean))];
+
+  setUniqueKodeSamsat(uniqueSamsat);
+  setUniquePT(uniquePT);
+  setUniqueBrand(uniqueBrand);
+}, [stnkData, invalidData]);
 
   // Get unique values for filters
   useEffect(() => {
@@ -346,6 +423,7 @@ const STNKDataTable = () => {
           toast.error(err.message || "Gagal memperbarui data");
         });
   };
+  
 
   const renderFilter = () => (
     <Fade in={true} timeout={600}>
@@ -786,14 +864,15 @@ const STNKDataTable = () => {
         "Belum ada data STNK"
       )}
 
-      {activeTab === 1 && renderTable(
-        invalidData,
-        invalidLoading,
-        invalidError,
-        "Data STNK Invalid",
-        "Tidak ada data STNK yang invalid",
-        true
-      )}
+{activeTab === 1 && renderTable(
+  filteredInvalidData,// ← ini hasil filter
+  invalidLoading,
+  invalidError,
+  "Data STNK Invalid",
+  "Tidak ada data STNK yang invalid",
+  true
+)}
+
 
       {/* Detail Dialog */}
       <Dialog
