@@ -4,7 +4,7 @@ import {
   Button, InputAdornment, Alert, CircularProgress, Box,
   Typography, Grid, Chip, Checkbox, Autocomplete,
   Accordion, AccordionSummary, AccordionDetails,
-  FormControlLabel
+  FormControlLabel, IconButton
 } from "@mui/material";
 import {
   Email,
@@ -20,7 +20,9 @@ import {
   Stars,
   Info,
   ExpandMore,
-  SelectAll
+  SelectAll,
+  Search,
+  Clear
 } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
@@ -41,6 +43,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
   const [ptList, setPtList] = useState([]);
   const [brandList, setBrandList] = useState([]);
   const [samsatList, setSamsatList] = useState([]);
+  const [samsatSearchQuery, setSamsatSearchQuery] = useState("");
 
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,9 +58,22 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
     glbm_samsat_id: [],
   });
 
-  // Group Samsat by wilayah_cakupan for more granular control
-  const groupedSamsat = samsatList.reduce((groups, samsat) => {
-    const region = samsat.wilayah_cakupan || samsat.wilayah; // fallback to wilayah if wilayah_cakupan is not available
+  // Filter Samsat berdasarkan search query
+  const filteredSamsatList = samsatList.filter(samsat => {
+    if (!samsatSearchQuery) return true;
+    
+    const query = samsatSearchQuery.toLowerCase();
+    return (
+      samsat.nama_samsat?.toLowerCase().includes(query) ||
+      samsat.kode_samsat?.toLowerCase().includes(query) ||
+      samsat.wilayah?.toLowerCase().includes(query) ||
+      samsat.wilayah_cakupan?.toLowerCase().includes(query)
+    );
+  });
+
+  // Group filtered Samsat by wilayah_cakupan
+  const groupedSamsat = filteredSamsatList.reduce((groups, samsat) => {
+    const region = samsat.wilayah_cakupan || samsat.wilayah;
     if (!groups[region]) {
       groups[region] = [];
     }
@@ -117,17 +133,22 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
     });
   };
 
-  // Check if all samsat in a region are selected
+  // Check if all samsat in a region are selected (considering filtered results)
   const isRegionFullySelected = (region) => {
     const regionSamsatIds = groupedSamsat[region]?.map(s => s.id) || [];
     return regionSamsatIds.length > 0 && regionSamsatIds.every(id => form.glbm_samsat_id.includes(id));
   };
 
-  // Check if some (but not all) samsat in a region are selected
+  // Check if some (but not all) samsat in a region are selected (considering filtered results)
   const isRegionPartiallySelected = (region) => {
     const regionSamsatIds = groupedSamsat[region]?.map(s => s.id) || [];
     const selectedCount = regionSamsatIds.filter(id => form.glbm_samsat_id.includes(id)).length;
     return selectedCount > 0 && selectedCount < regionSamsatIds.length;
+  };
+
+  // Clear search
+  const handleClearSearch = () => {
+    setSamsatSearchQuery("");
   };
 
   useEffect(() => {
@@ -144,6 +165,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
       glbm_samsat_id: [],
     });
     setErrorMsg("");
+    setSamsatSearchQuery("");
 
     Promise.all([
       axios.get(`${baseUrl}/roles`, config),
@@ -494,21 +516,79 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                 </Grid>
               )}
 
-              {/* Enhanced Samsat Selection with Select All by Region */}
+              {/* Enhanced Samsat Selection with Search and Select All by Region */}
               <Grid item xs={12}>
                 <Box className="border border-gray-300 rounded-lg p-4">
                   <Typography variant="subtitle2" className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <LocationOn sx={{ color: "#166534", fontSize: 18 }} /> Pilih Samsat (Berdasarkan Wilayah Cakupan)
                   </Typography>
                   
-                  {/* Display selected count */}
+                  {/* Search Samsat */}
+                  <Box className="mb-4">
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Cari berdasarkan nama samsat, kode, atau wilayah..."
+                      value={samsatSearchQuery}
+                      onChange={(e) => setSamsatSearchQuery(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Search sx={{ color: "#166534", fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: samsatSearchQuery && (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={handleClearSearch}
+                              sx={{ color: "#666" }}
+                            >
+                              <Clear sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#166534',
+                          },
+                        },
+                        bgcolor: '#f9fafb',
+                      }}
+                    />
+                  </Box>
+
+                  {/* Display selected count and search results */}
                   <Box className="mb-3">
                     <Typography variant="body2" className="text-gray-600">
                       Dipilih: {form.glbm_samsat_id.length} dari {samsatList.length} Samsat
+                      {samsatSearchQuery && (
+                        <span className="ml-2 text-blue-600">
+                          • Ditemukan: {filteredSamsatList.length} hasil
+                        </span>
+                      )}
                     </Typography>
                   </Box>
 
-                  {/* Accordion for each wilayah_cakupan */}
+                  {/* Show message if no search results */}
+                  {samsatSearchQuery && filteredSamsatList.length === 0 && (
+                    <Box className="text-center py-8">
+                      <Typography variant="body2" className="text-gray-500">
+                        Tidak ada Samsat yang ditemukan untuk "{samsatSearchQuery}"
+                      </Typography>
+                      <Button
+                        size="small"
+                        onClick={handleClearSearch}
+                        sx={{ mt: 1, color: '#166534' }}
+                      >
+                        Hapus pencarian
+                      </Button>
+                    </Box>
+                  )}
+
+                  {/* Accordion for each wilayah_cakupan (filtered) */}
                   {Object.keys(groupedSamsat).sort().map((region) => {
                     const isFullySelected = isRegionFullySelected(region);
                     const isPartiallySelected = isRegionPartiallySelected(region);
@@ -546,6 +626,11 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                               <Box>
                                 <Typography variant="subtitle2" className="font-semibold">
                                   {region}
+                                  {samsatSearchQuery && (
+                                    <span className="ml-2 text-xs text-blue-600 font-normal">
+                                      ({samsatInRegion.length} hasil)
+                                    </span>
+                                  )}
                                 </Typography>
                                 <Typography variant="caption" className="text-gray-500">
                                   {samsatInRegion[0]?.wilayah} • {samsatInRegion.length} Samsat
