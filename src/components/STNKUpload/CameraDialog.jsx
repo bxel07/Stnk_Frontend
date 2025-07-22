@@ -1,4 +1,3 @@
-// CameraDialog.jsx
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 
 const CameraDialog = ({ open, onClose, onCapture, videoRef, canvasRef }) => {

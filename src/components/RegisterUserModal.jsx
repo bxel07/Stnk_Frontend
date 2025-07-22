@@ -2,7 +2,9 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, FormControl, InputLabel, Select, MenuItem,
   Button, InputAdornment, Alert, CircularProgress, Box,
-  Typography, Grid, Chip
+  Typography, Grid, Chip, Checkbox, Autocomplete,
+  Accordion, AccordionSummary, AccordionDetails,
+  FormControlLabel
 } from "@mui/material";
 import {
   Email,
@@ -16,18 +18,19 @@ import {
   SupervisorAccount,
   Group,
   Stars,
-  Info
+  Info,
+  ExpandMore,
+  SelectAll
 } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import Swal from "sweetalert2";
+import Popper from '@mui/material/Popper';
 
 const baseUrl = import.meta.env.VITE_API_URL;
 
-
 const RegisterUserModal = ({ open, onClose, onSuccess }) => {
-
   const token = localStorage.getItem("access_token");
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -49,15 +52,23 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
     nomor_telepon: "",
     glbm_pt_id: [],        
     glbm_brand_ids: [],      
-    glbm_samsat_id: "",
+    glbm_samsat_id: [],
   });
 
-  
+  // Group Samsat by wilayah_cakupan for more granular control
+  const groupedSamsat = samsatList.reduce((groups, samsat) => {
+    const region = samsat.wilayah_cakupan || samsat.wilayah; // fallback to wilayah if wilayah_cakupan is not available
+    if (!groups[region]) {
+      groups[region] = [];
+    }
+    groups[region].push(samsat);
+    return groups;
+  }, {});
+
   const getRoleName = () => {
     const r = roles.find((r) => r.id === form.role_id);
     return r?.name || "";
   };
-  const isSelectedUserRole = getRoleName().toLowerCase() === "user";
 
   const getRoleIcon = (roleName) => {
     const iconProps = { fontSize: "small", sx: { color: "#166534" } };
@@ -80,6 +91,44 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle Select All for a specific region
+  const handleSelectAllRegion = (region, isChecked) => {
+    const regionSamsatIds = groupedSamsat[region]?.map(s => s.id) || [];
+    
+    setForm((prev) => {
+      let newSamsatIds = [...prev.glbm_samsat_id];
+      
+      if (isChecked) {
+        // Add all region samsat IDs that aren't already selected
+        regionSamsatIds.forEach(id => {
+          if (!newSamsatIds.includes(id)) {
+            newSamsatIds.push(id);
+          }
+        });
+      } else {
+        // Remove all region samsat IDs
+        newSamsatIds = newSamsatIds.filter(id => !regionSamsatIds.includes(id));
+      }
+      
+      return {
+        ...prev,
+        glbm_samsat_id: newSamsatIds
+      };
+    });
+  };
+
+  // Check if all samsat in a region are selected
+  const isRegionFullySelected = (region) => {
+    const regionSamsatIds = groupedSamsat[region]?.map(s => s.id) || [];
+    return regionSamsatIds.length > 0 && regionSamsatIds.every(id => form.glbm_samsat_id.includes(id));
+  };
+
+  // Check if some (but not all) samsat in a region are selected
+  const isRegionPartiallySelected = (region) => {
+    const regionSamsatIds = groupedSamsat[region]?.map(s => s.id) || [];
+    const selectedCount = regionSamsatIds.filter(id => form.glbm_samsat_id.includes(id)).length;
+    return selectedCount > 0 && selectedCount < regionSamsatIds.length;
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -92,7 +141,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
       nomor_telepon: "",
       glbm_pt_id: [],
       glbm_brand_ids: [],
-      glbm_samsat_id: "",
+      glbm_samsat_id: [],
     });
     setErrorMsg("");
 
@@ -113,6 +162,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
         setErrorMsg("Gagal memuat opsi, coba lagi.");
       });
   }, [open]);
+
   const handleSubmit = async () => {
     setErrorMsg("");
     setLoading(true);
@@ -125,7 +175,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
         !form.nama_lengkap ||
         !form.nomor_telepon ||
         !form.role_id ||
-        !form.glbm_samsat_id
+        !form.glbm_samsat_id.length
       ) {
         throw new Error("Semua field wajib diisi");
       }
@@ -144,11 +194,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
       if (!form.glbm_samsat_id || form.glbm_samsat_id.length === 0) {
         throw new Error("Pilih minimal satu Samsat");
       }
-      if (getRoleName().toLowerCase() === "user" && Array.isArray(form.glbm_samsat_id)) {
-        throw new Error("User hanya boleh memilih 1 Samsat");
-      }      
       
-
       const payload = {
         username: form.username,
         gmail: form.gmail,
@@ -156,9 +202,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
         role_id: Number(form.role_id),
         nama_lengkap: form.nama_lengkap,
         nomor_telepon: form.nomor_telepon,
-        glbm_samsat_id: Array.isArray(form.glbm_samsat_id)
-        ? form.glbm_samsat_id.map(Number)
-        : [Number(form.glbm_samsat_id)],      
+        glbm_samsat_id: form.glbm_samsat_id.map(Number),
         glbm_pt_id: form.glbm_pt_id.map(Number),
         glbm_brand_ids: form.glbm_brand_ids.map(Number),
       };
@@ -180,17 +224,14 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
     } finally {
       setLoading(false);
     }
-    
   };
+
   const inputFocusStyles = {
     "& .MuiOutlinedInput-root": {
       "&.Mui-focused fieldset": { borderColor: "#166534" },
     },
     "& .MuiInputLabel-root.Mui-focused": { color: "#166534" },
   };
- const isUserRole = getRoleName().toLowerCase() === "user";
-
-
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" PaperProps={{ className: "rounded-2xl" }}>
@@ -344,171 +385,249 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
             <Grid container spacing={2}>
               {/* PT */}
               {["superadmin", "admin"].includes(getRoleName()) && (
-  <Grid item xs={12} md={6}>
-    <FormControl fullWidth margin="normal">
-      <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>
-        PT {getRoleName() === "superadmin" ? "(Multiple)" : ""}
-      </InputLabel>
-      <Select
-        name="glbm_pt_id"
-        multiple={getRoleName() === "superadmin"}
-        value={
-          getRoleName() === "superadmin"
-            ? form.glbm_pt_id
-            : form.glbm_pt_id[0] || ""
-        }
-        onChange={(e) => {
-          const value = e.target.value;
-          setForm((prev) => ({
-            ...prev,
-            glbm_pt_id:
-              getRoleName() === "superadmin" ? value : [value],
-          }));
-        }}
-        sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
-      >
-        {ptList.map((pt) => (
-          <MenuItem key={pt.id} value={pt.id}>
-            <Box className="flex items-center gap-2">
-              <Business sx={{ color: "#166534", fontSize: 16 }} /> {pt.nama_pt}
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth margin="normal">
+                    <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>
+                      PT {getRoleName() === "superadmin" ? "(Multiple)" : ""}
+                    </InputLabel>
+                    <Select
+                      name="glbm_pt_id"
+                      multiple={getRoleName() === "superadmin"}
+                      value={
+                        getRoleName() === "superadmin"
+                          ? form.glbm_pt_id
+                          : form.glbm_pt_id[0] || ""
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setForm((prev) => ({
+                          ...prev,
+                          glbm_pt_id:
+                            getRoleName() === "superadmin" ? value : [value],
+                        }));
+                      }}
+                      sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
+                    >
+                      {ptList.map((pt) => (
+                        <MenuItem key={pt.id} value={pt.id}>
+                          <Box className="flex items-center gap-2">
+                            <Business sx={{ color: "#166534", fontSize: 16 }} /> {pt.nama_pt}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-    {/* Chips Superadmin */}
-    {getRoleName() === "superadmin" && form.glbm_pt_id.length > 0 && (
-      <Box className="mt-2 flex flex-wrap gap-1">
-        {form.glbm_pt_id.map((ptId) => {
-          const pt = ptList.find((p) => p.id === ptId);
-          return pt ? (
-            <Chip
-              key={ptId}
-              label={pt.nama_pt}
-              size="small"
-              sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-            />
-          ) : null;
-        })}
-      </Box>
-    )}
-  </Grid>
-)}
+                  {/* Chips Superadmin */}
+                  {getRoleName() === "superadmin" && form.glbm_pt_id.length > 0 && (
+                    <Box className="mt-2 flex flex-wrap gap-1">
+                      {form.glbm_pt_id.map((ptId) => {
+                        const pt = ptList.find((p) => p.id === ptId);
+                        return pt ? (
+                          <Chip
+                            key={ptId}
+                            label={pt.nama_pt}
+                            size="small"
+                            sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
+                          />
+                        ) : null;
+                      })}
+                    </Box>
+                  )}
+                </Grid>
+              )}
 
-           {/* Brand */}
-{["superadmin", "admin", "cao"].includes(getRoleName()) && (
-  <Grid item xs={12} md={getRoleName() === "cao" ? 12 : 6}>
-    <FormControl fullWidth margin="normal">
-      <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>
-        Brand {getRoleName() === "cao" ? "" : "(Multiple)"}
-      </InputLabel>
-      <Select
-        name="glbm_brand_ids"
-        multiple={getRoleName() !== "cao"}
-        value={
-          getRoleName() === "cao"
-            ? form.glbm_brand_ids[0] || ""
-            : form.glbm_brand_ids
-        }
-        onChange={(e) => {
-          const value = e.target.value;
-          setForm((prev) => ({
-            ...prev,
-            glbm_brand_ids:
-              getRoleName() === "cao" ? [value] : value,
-          }));
-        }}
-        sx={{
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#166534",
-          },
-        }}
-      >
-        {brandList.map((b) => (
-          <MenuItem key={b.id} value={b.id}>
-            <Box className="flex items-center gap-2">
-              <Label sx={{ color: "#166534", fontSize: 16 }} /> {b.nama_brand}
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+              {/* Brand */}
+              {["superadmin", "admin", "cao"].includes(getRoleName()) && (
+                <Grid item xs={12} md={getRoleName() === "cao" ? 12 : 6}>
+                  <FormControl fullWidth margin="normal">
+                    <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>
+                      Brand {getRoleName() === "cao" ? "" : "(Multiple)"}
+                    </InputLabel>
+                    <Select
+                      name="glbm_brand_ids"
+                      multiple={getRoleName() !== "cao"}
+                      value={
+                        getRoleName() === "cao"
+                          ? form.glbm_brand_ids[0] || ""
+                          : form.glbm_brand_ids
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setForm((prev) => ({
+                          ...prev,
+                          glbm_brand_ids:
+                            getRoleName() === "cao" ? [value] : value,
+                        }));
+                      }}
+                      sx={{
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#166534",
+                        },
+                      }}
+                      >
+                      {brandList.map((b) => (
+                        <MenuItem key={b.id} value={b.id}>
+                          <Box className="flex items-center gap-2">
+                            <Label sx={{ color: "#166534", fontSize: 16 }} /> {b.nama_brand}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-    {/* Brand Chips */}
-    {form.glbm_brand_ids.length > 0 && (
-      <Box className="mt-2 flex flex-wrap gap-1">
-        {form.glbm_brand_ids.map((brandId) => {
-          const brand = brandList.find((b) => b.id === brandId);
-          return brand ? (
-            <Chip
-              key={brandId}
-              label={brand.nama_brand}
-              size="small"
-              sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-            />
-          ) : null;
-        })}
-      </Box>
-    )}
-  </Grid>
-)}
+                  {/* Brand Chips */}
+                  {form.glbm_brand_ids.length > 0 && (
+                    <Box className="mt-2 flex flex-wrap gap-1">
+                      {form.glbm_brand_ids.map((brandId) => {
+                        const brand = brandList.find((b) => b.id === brandId);
+                        return brand ? (
+                          <Chip
+                            key={brandId}
+                            label={brand.nama_brand}
+                            size="small"
+                            sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
+                          />
+                        ) : null;
+                      })}
+                    </Box>
+                  )}
+                </Grid>
+              )}
 
-              {/* Samsat */}
+              {/* Enhanced Samsat Selection with Select All by Region */}
               <Grid item xs={12}>
-  <FormControl fullWidth margin="normal">
-    <InputLabel sx={{ "&.Mui-focused": { color: "#166534" } }}>Samsat</InputLabel>
-    <Select
-  name="glbm_samsat_id"
-  multiple={!isUserRole}
-  value={isUserRole ? form.glbm_samsat_id : form.glbm_samsat_id || []}
-  onChange={(e) => {
-    const value = e.target.value;
-    setForm((prev) => ({
-      ...prev,
-      glbm_samsat_id: isUserRole
-        ? value
-        : Array.isArray(value)
-        ? value
-        : [value],
-    }));
-  }}
-      sx={{
-        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-          borderColor: "#166534",
-        },
-      }}
-    >
-      {samsatList.map((s) => (
-        <MenuItem key={s.id} value={s.id}>
-          <Box className="flex items-center gap-2">
-            <LocationOn sx={{ color: "#166534", fontSize: 16 }} />
-            <span>
-              {s.wilayah}/{s.wilayah_cakupan}/{s.nama_samsat} (#{s.kode_samsat})
-            </span>
-          </Box>
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
+                <Box className="border border-gray-300 rounded-lg p-4">
+                  <Typography variant="subtitle2" className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <LocationOn sx={{ color: "#166534", fontSize: 18 }} /> Pilih Samsat (Berdasarkan Wilayah Cakupan)
+                  </Typography>
+                  
+                  {/* Display selected count */}
+                  <Box className="mb-3">
+                    <Typography variant="body2" className="text-gray-600">
+                      Dipilih: {form.glbm_samsat_id.length} dari {samsatList.length} Samsat
+                    </Typography>
+                  </Box>
 
-  {!isUserRole && Array.isArray(form.glbm_samsat_id) && form.glbm_samsat_id.length > 0 && (
-  <Box className="mt-2 flex flex-wrap gap-1">
-    {form.glbm_samsat_id.map((samsatId) => {
-      const s = samsatList.find((item) => item.id === samsatId);
-      return s ? (
-        <Chip
-          key={samsatId}
-          label={`${s.nama_samsat} (#${s.kode_samsat})`}
-          size="small"
-          sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-        />
-      ) : null;
-    })}
-  </Box>
-)}
-</Grid>
-</Grid>
+                  {/* Accordion for each wilayah_cakupan */}
+                  {Object.keys(groupedSamsat).sort().map((region) => {
+                    const isFullySelected = isRegionFullySelected(region);
+                    const isPartiallySelected = isRegionPartiallySelected(region);
+                    const samsatInRegion = groupedSamsat[region];
+                    
+                    return (
+                      <Accordion key={region} sx={{ mb: 1 }}>
+                        <AccordionSummary
+                          expandIcon={<ExpandMore />}
+                          sx={{
+                            bgcolor: isFullySelected ? "#f0f9ff" : isPartiallySelected ? "#fffbeb" : "#f9fafb",
+                            borderRadius: "8px",
+                            "&:hover": { bgcolor: "#f3f4f6" }
+                          }}
+                        >
+                          <Box className="flex items-center justify-between w-full mr-4">
+                            <Box className="flex items-center gap-2">
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={isFullySelected}
+                                    indeterminate={isPartiallySelected}
+                                    onChange={(e) => handleSelectAllRegion(region, e.target.checked)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    sx={{
+                                      color: "#166534",
+                                      "&.Mui-checked": { color: "#166534" },
+                                      "&.MuiCheckbox-indeterminate": { color: "#f59e0b" }
+                                    }}
+                                  />
+                                }
+                                label=""
+                                sx={{ margin: 0 }}
+                              />
+                              <Box>
+                                <Typography variant="subtitle2" className="font-semibold">
+                                  {region}
+                                </Typography>
+                                <Typography variant="caption" className="text-gray-500">
+                                  {samsatInRegion[0]?.wilayah} • {samsatInRegion.length} Samsat
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Typography variant="body2" className="text-gray-500">
+                              {samsatInRegion.filter(s => form.glbm_samsat_id.includes(s.id)).length}/{samsatInRegion.length}
+                            </Typography>
+                          </Box>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Grid container spacing={1}>
+                            {samsatInRegion.map((samsat) => (
+                              <Grid item xs={12} sm={6} md={4} key={samsat.id}>
+                                <FormControlLabel
+                                  control={
+                                    <Checkbox
+                                      checked={form.glbm_samsat_id.includes(samsat.id)}
+                                      onChange={(e) => {
+                                        const isChecked = e.target.checked;
+                                        setForm((prev) => ({
+                                          ...prev,
+                                          glbm_samsat_id: isChecked
+                                            ? [...prev.glbm_samsat_id, samsat.id]
+                                            : prev.glbm_samsat_id.filter(id => id !== samsat.id)
+                                        }));
+                                      }}
+                                      sx={{
+                                        color: "#166534",
+                                        "&.Mui-checked": { color: "#166534" }
+                                      }}
+                                    />
+                                  }
+                                  label={
+                                    <Box>
+                                      <Typography variant="body2" className="text-sm font-medium">
+                                        {samsat.nama_samsat}
+                                      </Typography>
+                                      <Typography variant="caption" className="text-gray-500">
+                                        #{samsat.kode_samsat}
+                                      </Typography>
+                                    </Box>
+                                  }
+                                />
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </AccordionDetails>
+                      </Accordion>
+                    );
+                  })}
+
+                  {/* Selected Samsat Chips */}
+                  {form.glbm_samsat_id.length > 0 && (
+                    <Box className="mt-3">
+                      <Typography variant="body2" className="text-gray-600 mb-2">Samsat Terpilih:</Typography>
+                      <Box className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                        {form.glbm_samsat_id.map((samsatId) => {
+                          const s = samsatList.find((item) => item.id === samsatId);
+                          return s ? (
+                            <Chip
+                              key={samsatId}
+                              label={`${s.nama_samsat} (#${s.kode_samsat})`}
+                              size="small"
+                              onDelete={() => {
+                                setForm((prev) => ({
+                                  ...prev,
+                                  glbm_samsat_id: prev.glbm_samsat_id.filter(id => id !== samsatId)
+                                }));
+                              }}
+                              sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
+                            />
+                          ) : null;
+                        })}
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              </Grid>
+            </Grid>
           </Box>
 
           {/* ==== Password Info ==================================== */}

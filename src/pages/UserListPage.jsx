@@ -7,7 +7,8 @@ import {
   TableHead, TableRow, CircularProgress, Alert, Card, CardContent,
   CardHeader, Divider, Chip, TextField, FormControl, InputLabel,
   Select, MenuItem, Grid, Button, Dialog, DialogTitle, DialogContent,
-  DialogActions, IconButton, Fade, Slide
+  DialogActions, IconButton, Fade, Slide, Accordion, AccordionSummary,
+  AccordionDetails, FormControlLabel, Checkbox
 } from "@mui/material";
 import { 
   Add, 
@@ -21,7 +22,9 @@ import {
   FilterList,
   AccountCircle,
   Stars,
-  Security
+  Security,
+  LocationOn,
+  ExpandMore
 } from "@mui/icons-material";
 import RegisterUserModal from "@/components/RegisterUserModal";
 
@@ -430,7 +433,7 @@ const UserListPage = () => {
 };
 
 const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
-  const BASE_URL = import.meta.env.VITE_API_URL + "/api";
+  const BASE_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("access_token");
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -444,135 +447,249 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
   const [roles, setRoles] = useState([]);
   const [ptList, setPtList] = useState([]);
   const [brandList, setBrandList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [samsatList, setSamsatList] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [samsatList, setSamsatList] = useState([]); 
   const [selectedRoleName, setSelectedRoleName] = useState("");
   const currentUser = useSelector((state) => state.auth.user);
 
+  // Group Samsat by wilayah_cakupan for select all functionality
+  const groupedSamsat = samsatList.reduce((groups, samsat) => {
+    const region = samsat.wilayah_cakupan || samsat.wilayah;
+    if (!groups[region]) {
+      groups[region] = [];
+    }
+    groups[region].push(samsat);
+    return groups;
+  }, {});
+
+  // Handle Select All for a specific region
+  const handleSelectAllRegion = (region, isChecked, otorisasiIndex) => {
+    const regionSamsatIds = groupedSamsat[region]?.map(s => s.id) || [];
+    
+    const newOtorisasi = [...form.otorisasi];
+    let currentSamsatIds = [...(newOtorisasi[otorisasiIndex].glbm_samsat_id || [])];
+    
+    if (isChecked) {
+      // Add all region samsat IDs that aren't already selected
+      regionSamsatIds.forEach(id => {
+        if (!currentSamsatIds.includes(id)) {
+          currentSamsatIds.push(id);
+        }
+      });
+    } else {
+      // Remove all region samsat IDs
+      currentSamsatIds = currentSamsatIds.filter(id => !regionSamsatIds.includes(id));
+    }
+    
+    newOtorisasi[otorisasiIndex].glbm_samsat_id = currentSamsatIds;
+    setForm({ ...form, otorisasi: newOtorisasi });
+  };
+
+  // Check if all samsat in a region are selected
+  const isRegionFullySelected = (region, otorisasiIndex) => {
+    const regionSamsatIds = groupedSamsat[region]?.map(s => s.id) || [];
+    const selectedIds = form.otorisasi[otorisasiIndex]?.glbm_samsat_id || [];
+    return regionSamsatIds.length > 0 && regionSamsatIds.every(id => selectedIds.includes(id));
+  };
+
+  // Check if some (but not all) samsat in a region are selected
+  const isRegionPartiallySelected = (region, otorisasiIndex) => {
+    const regionSamsatIds = groupedSamsat[region]?.map(s => s.id) || [];
+    const selectedIds = form.otorisasi[otorisasiIndex]?.glbm_samsat_id || [];
+    const selectedCount = regionSamsatIds.filter(id => selectedIds.includes(id)).length;
+    return selectedCount > 0 && selectedCount < regionSamsatIds.length;
+  };
+
+  // Fetch data master lists saat modal dibuka
   useEffect(() => {
-    if (!userId || !open) return;
-  
-    const fetchAll = async () => {
-      setLoading(true);
+    const fetchMasterData = async () => {
+      if (!open) return;
+      
       try {
-        const [roleRes, ptRes, brandRes, allUsersRes, samsatRes] = await Promise.all([
-          axios.get(`${BASE_URL}/roles`, config),
+        console.log("Fetching master data...");
+        
+        const [ptRes, brandRes, samsatRes] = await Promise.all([
           axios.get(`${BASE_URL}/glbm-pt`, config),
           axios.get(`${BASE_URL}/glbm-brand`, config),
-          axios.get(`${BASE_URL}/users`, config),
           axios.get(`${BASE_URL}/glbm-samsat`, config),
         ]);
-  
-        setRoles(roleRes.data);
-        setPtList(ptRes.data.data || []);
-        setBrandList(brandRes.data.data || []);
-        setSamsatList(samsatRes.data.data || []);
-        const userList = allUsersRes.data.data || [];
-        const u = userList.find((item) => item.id === userId);
-  
-        if (!u) {
+
+        const ptData = ptRes.data.data || [];
+        const brandData = brandRes.data.data || [];
+        const samsatData = samsatRes.data.data || [];
+
+        setPtList(ptData);
+        setBrandList(brandData);
+        setSamsatList(samsatData);
+
+        console.log("Master data loaded:", {
+          pt: ptData.length,
+          brand: brandData.length,
+          samsat: samsatData.length
+        });
+
+        // Fetch roles
+        const rolesData = [
+          { id: 1, name: "superadmin" },
+          { id: 2, name: "admin" },
+          { id: 3, name: "cao" },
+          { id: 4, name: "user" }
+        ];
+        setRoles(rolesData);
+
+      } catch (err) {
+        console.error("Error fetching master data:", err);
+        setErrorMsg("Gagal memuat data master");
+      }
+    };
+
+    fetchMasterData();
+  }, [open]);
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!userId || !open) return;
+      
+      setLoading(true);
+      try {
+        console.log("Fetching user data for ID:", userId);
+        
+        const usersRes = await axios.get(`${BASE_URL}/users`, config);
+        const userList = usersRes.data.data || [];
+        const userData = userList.find((item) => item.id === userId);
+
+        if (!userData) {
           setErrorMsg("User tidak ditemukan");
           return;
         }
-  
-        const originalOtorisasi = u.otorisasi || [];
-  
-        setForm({
-          username: u.username || "",
-          gmail: u.gmail || "",
-          role_id: u.role_id || "",
-          otorisasi: originalOtorisasi.length > 0
-            ? originalOtorisasi.map((o) => ({
-                pt_id: Array.isArray(o.pt_id) ? o.pt_id : [o.pt_id],
-                brand_id: Array.isArray(o.brand_id) ? o.brand_id : [o.brand_id],
-                glbm_samsat_id: Array.isArray(o.glbm_samsat_id) ? o.glbm_samsat_id : [o.glbm_samsat_id],
-              }))
-            : [{
-                pt_id: Array.isArray(u.pt_id) ? u.pt_id : [u.pt_id],
-                brand_id: Array.isArray(u.brand_id) ? u.brand_id : [u.brand_id],
-                glbm_samsat_id: [],
-              }]
-        });
+
+        console.log("User data found:", userData);
+
+        // Process otorisasi data - struktur yang benar
+        let otorisasiData = [];
         
-  
-        setErrorMsg("");
+        if (userData.otorisasi) {
+          otorisasiData = [{
+            pt_id: userData.otorisasi.pt_ids || [],
+            brand_id: userData.otorisasi.brand_ids || [],
+            glbm_samsat_id: userData.otorisasi.samsat_ids || []
+          }];
+        } else {
+          otorisasiData = [{
+            pt_id: [],
+            brand_id: [],
+            glbm_samsat_id: []
+          }];
+        }
+
+        // Determine role_id dari string role
+        let roleId = "";
+        if (userData.role_id) {
+          roleId = userData.role_id;
+        } else if (userData.role && typeof userData.role === 'string') {
+          // Map string role ke ID
+          const roleMapping = {
+            "superadmin": 1,
+            "admin": 2, 
+            "cao": 3,
+            "user": 4
+          };
+          roleId = roleMapping[userData.role] || "";
+        }
+
+        const formData = {
+          username: userData.username || "",
+          gmail: userData.gmail || userData.email || "",
+          role_id: roleId,
+          otorisasi: otorisasiData
+        };
+
+        setForm(formData);
+        
+        // Set selected role name untuk conditional rendering
+        if (userData.role && typeof userData.role === 'string') {
+          setSelectedRoleName(userData.role);
+        } else if (roleId) {
+          const role = roles.find(r => r.id === parseInt(roleId));
+          if (role) setSelectedRoleName(role.name);
+        }
+
+        console.log("Form data set:", formData);
+        console.log("Selected role name:", userData.role);
+        console.log("Processed otorisasi:", otorisasiData);
+
       } catch (err) {
+        console.error("Error fetching user:", err);
         setErrorMsg("Gagal memuat data user");
       } finally {
         setLoading(false);
       }
     };
-  
-    fetchAll();
-  }, [userId, open]);
 
-  useEffect(() => {
-    if (form.role_id && roles.length > 0) {
-      const selectedRole = roles.find((r) => r.id === parseInt(form.role_id));
-      setSelectedRoleName(selectedRole?.name || "");
+    // Delay sedikit untuk memastikan master data sudah ter-load
+    if (open && userId) {
+      setTimeout(fetchUserData, 100);
     }
-  }, [form.role_id, roles]);
-  
+  }, [userId, open, roles]);
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      setForm({
+        username: "",
+        gmail: "",
+        role_id: "",
+        otorisasi: [{ pt_id: [], brand_id: [], glbm_samsat_id: [] }],
+      });
+      setErrorMsg("");
+      setSelectedRoleName("");
+      setLoading(false);
+    }
+  }, [open]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm(prev => ({ ...prev, [name]: value }));
 
     if (name === "role_id") {
-      const selectedRole = roles.find((r) => r.id === parseInt(value));
+      const selectedRole = roles.find(r => r.id === parseInt(value));
       setSelectedRoleName(selectedRole?.name || "");
     }
   };
 
-  const handleOtorisasiChange = (i, field, value) => {
+  const handleOtorisasiChange = (index, field, value) => {
     const newOtorisasi = [...form.otorisasi];
-  
-    // pastikan array jika multiple
-    const ensuredArray = Array.isArray(value) ? value : [value];
-    newOtorisasi[i][field] = ensuredArray;
-  
+    newOtorisasi[index][field] = Array.isArray(value) ? value : [value];
     setForm({ ...form, otorisasi: newOtorisasi });
   };
-  
 
   const handleSubmit = async () => {
     try {
+      setErrorMsg("");
       const payload = {
         username: form.username,
         gmail: form.gmail,
         role_id: parseInt(form.role_id),
-        otorisasi: form.otorisasi.map((o) => ({
-          pt_id: (Array.isArray(o.pt_id) ? o.pt_id : [o.pt_id])
-            .filter((id) => id !== null && id !== undefined)
-            .map(Number),
-          brand_id: (Array.isArray(o.brand_id) ? o.brand_id : [o.brand_id])
-            .filter((id) => id !== null && id !== undefined)
-            .map(Number),
-          glbm_samsat_id: (Array.isArray(o.glbm_samsat_id) ? o.glbm_samsat_id : [o.glbm_samsat_id])
-            .filter((id) => id !== null && id !== undefined)
-            .map(Number),
+        otorisasi: form.otorisasi.map(o => ({
+          pt_id: o.pt_id.filter(id => id !== null && id !== undefined && id !== "").map(Number),
+          brand_id: o.brand_id.filter(id => id !== null && id !== undefined && id !== "").map(Number),
+          glbm_samsat_id: o.glbm_samsat_id.filter(id => id !== null && id !== undefined && id !== "").map(Number),
         })),
-      };      
-      console.log(payload);
+      };
+      
       await axios.put(`${BASE_URL}/update-user/${userId}`, payload, config);
       onSaved();
       onClose();
     } catch (err) {
-      const msg = err?.response?.data?.detail || JSON.stringify(err?.response?.data || err.message);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err.message;
       setErrorMsg(msg);
     }
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      fullWidth 
-      maxWidth="md"
-      PaperProps={{
-        className: "rounded-2xl",
-      }}
-    >
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle className="bg-green-50 border-b border-green-200">
         <Box className="flex items-center gap-2">
           <Edit sx={{ color: '#166534', fontSize: 24 }} />
@@ -581,17 +698,17 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
           </Typography>
         </Box>
       </DialogTitle>
+      
       <DialogContent dividers className="p-6">
         {loading ? (
           <Box className="flex justify-center items-center py-8">
             <CircularProgress size={40} sx={{ color: '#166534' }} />
+            <Typography className="ml-3">Memuat data pengguna...</Typography>
           </Box>
         ) : (
           <Box className="space-y-4">
             {errorMsg && (
-              <Alert severity="error" className="rounded-xl">
-                {errorMsg}
-              </Alert>
+              <Alert severity="error" className="rounded-xl">{errorMsg}</Alert>
             )}
             
             <TextField 
@@ -648,13 +765,13 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                 }}
               >
                 {roles
-                  .filter((r) => {
+                  .filter(r => {
                     if (currentUserRole === "admin") {
                       return r.name === "user" || r.name === "cao";
                     }
                     return true;
                   })
-                  .map((r) => (
+                  .map(r => (
                     <MenuItem key={r.id} value={r.id}>
                       <Box className="flex items-center gap-2">
                         {r.name === 'superadmin' && <Stars sx={{ color: '#166534', fontSize: 18 }} />}
@@ -675,84 +792,188 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
               
               {form.otorisasi.map((otor, i) => (
                 <Grid container spacing={2} alignItems="center" key={i} className="mb-3">
+                  {/* Enhanced Samsat Selection with Select All by Region */}
                   <Grid item xs={12}>
-              <FormControl fullWidth margin="dense">
-                <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
-                  Samsat
-                </InputLabel>
-                <Select
-                  multiple
-                  value={otor.glbm_samsat_id}
-                  onChange={(e) => handleOtorisasiChange(i, "glbm_samsat_id", e.target.value)}
-                  label="Samsat"
-                  sx={{
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#166534',
-                    },
-                  }}
-                >
-                  {/** Pastikan kamu sudah punya state samsatList */}
-                  {samsatList.map((s) => (
-                    <MenuItem key={s.id} value={s.id}>
-                    {s.wilayah}/{s.wilayah_cakupan}/{s.nama_samsat} (#{s.kode_samsat})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+                    <Box className="border border-gray-300 rounded-lg p-4">
+                      <Typography variant="subtitle2" className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <LocationOn sx={{ color: "#166534", fontSize: 18 }} /> Pilih Samsat (Berdasarkan Wilayah Cakupan)
+                      </Typography>
+                      
+                      {/* Display selected count */}
+                      <Box className="mb-3">
+                        <Typography variant="body2" className="text-gray-600">
+                          Dipilih: {(otor.glbm_samsat_id || []).length} dari {samsatList.length} Samsat
+                        </Typography>
+                      </Box>
+
+                      {/* Accordion for each wilayah_cakupan */}
+                      {Object.keys(groupedSamsat).sort().map((region) => {
+                        const isFullySelected = isRegionFullySelected(region, i);
+                        const isPartiallySelected = isRegionPartiallySelected(region, i);
+                        const samsatInRegion = groupedSamsat[region];
+                        
+                        return (
+                          <Accordion key={region} sx={{ mb: 1 }}>
+                            <AccordionSummary
+                              expandIcon={<ExpandMore />}
+                              sx={{
+                                bgcolor: isFullySelected ? "#f0f9ff" : isPartiallySelected ? "#fffbeb" : "#f9fafb",
+                                borderRadius: "8px",
+                                "&:hover": { bgcolor: "#f3f4f6" }
+                              }}
+                            >
+                              <Box className="flex items-center justify-between w-full mr-4">
+                                <Box className="flex items-center gap-2">
+                                  <FormControlLabel
+                                    control={
+                                      <Checkbox
+                                        checked={isFullySelected}
+                                        indeterminate={isPartiallySelected}
+                                        onChange={(e) => handleSelectAllRegion(region, e.target.checked, i)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        sx={{
+                                          color: "#166534",
+                                          "&.Mui-checked": { color: "#166534" },
+                                          "&.MuiCheckbox-indeterminate": { color: "#f59e0b" }
+                                        }}
+                                      />
+                                    }
+                                    label=""
+                                    sx={{ margin: 0 }}
+                                  />
+                                  <Box>
+                                    <Typography variant="subtitle2" className="font-semibold">
+                                      {region}
+                                    </Typography>
+                                    <Typography variant="caption" className="text-gray-500">
+                                      {samsatInRegion[0]?.wilayah} • {samsatInRegion.length} Samsat
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <Typography variant="body2" className="text-gray-500">
+                                  {samsatInRegion.filter(s => (otor.glbm_samsat_id || []).includes(s.id)).length}/{samsatInRegion.length}
+                                </Typography>
+                              </Box>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                              <Grid container spacing={1}>
+                                {samsatInRegion.map((samsat) => (
+                                  <Grid item xs={12} sm={6} md={4} key={samsat.id}>
+                                    <FormControlLabel
+                                      control={
+                                        <Checkbox
+                                          checked={(otor.glbm_samsat_id || []).includes(samsat.id)}
+                                          onChange={(e) => {
+                                            const isChecked = e.target.checked;
+                                            const currentIds = otor.glbm_samsat_id || [];
+                                            const newIds = isChecked
+                                              ? [...currentIds, samsat.id]
+                                              : currentIds.filter(id => id !== samsat.id);
+                                            handleOtorisasiChange(i, "glbm_samsat_id", newIds);
+                                          }}
+                                          sx={{
+                                            color: "#166534",
+                                            "&.Mui-checked": { color: "#166534" }
+                                          }}
+                                        />
+                                      }
+                                      label={
+                                        <Box>
+                                          <Typography variant="body2" className="text-sm font-medium">
+                                            {samsat.nama_samsat}
+                                          </Typography>
+                                          <Typography variant="caption" className="text-gray-500">
+                                            #{samsat.kode_samsat}
+                                          </Typography>
+                                        </Box>
+                                      }
+                                    />
+                                  </Grid>
+                                ))}
+                              </Grid>
+                            </AccordionDetails>
+                          </Accordion>
+                        );
+                      })}
+
+                      {/* Selected Samsat Chips */}
+                      {(otor.glbm_samsat_id || []).length > 0 && (
+                        <Box className="mt-3">
+                          <Typography variant="body2" className="text-gray-600 mb-2">Samsat Terpilih:</Typography>
+                          <Box className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                            {(otor.glbm_samsat_id || []).map((samsatId) => {
+                              const s = samsatList.find((item) => item.id === samsatId);
+                              return s ? (
+                                <Chip
+                                  key={samsatId}
+                                  label={`${s.nama_samsat} (#${s.kode_samsat})`}
+                                  size="small"
+                                  onDelete={() => {
+                                    const newIds = (otor.glbm_samsat_id || []).filter(id => id !== samsatId);
+                                    handleOtorisasiChange(i, "glbm_samsat_id", newIds);
+                                  }}
+                                  sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
+                                />
+                              ) : null;
+                            })}
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
+                  </Grid>
 
                   {(selectedRoleName !== "cao" && selectedRoleName !== "user") && (
                     <Grid item xs={12} md={selectedRoleName === "superadmin" ? 6 : 12}>
-                    <FormControl fullWidth margin="dense">
-                      <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
-                        PT
-                      </InputLabel>
-                      <Select
-                        multiple={selectedRoleName === "superadmin"}
-                        value={otor.pt_id}
-                        onChange={(e) => handleOtorisasiChange(i, "pt_id", e.target.value)}
-                        label="PT"
-                        sx={{
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#166534',
-                          },
-                        }}
-                      >
-                        {ptList.map((pt) => (
-                          <MenuItem key={pt.id} value={pt.id}>
-                            {pt.nama_pt}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>                  
+                      <FormControl fullWidth margin="dense">
+                        <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                          PT
+                        </InputLabel>
+                        <Select
+                          multiple={selectedRoleName === "superadmin"}
+                          value={otor.pt_id || []}
+                          onChange={(e) => handleOtorisasiChange(i, "pt_id", e.target.value)}
+                          label="PT"
+                          sx={{
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#166534',
+                            },
+                          }}
+                        >
+                          {ptList.map(pt => (
+                            <MenuItem key={pt.id} value={pt.id}>
+                              {pt.nama_pt}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>                  
                   )}
                   
                   {(selectedRoleName === "cao" || selectedRoleName === "admin" || selectedRoleName === "superadmin") && (
                     <Grid item xs={12} md={6}>
-                    <FormControl fullWidth margin="dense">
-                      <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
-                        Brand
-                      </InputLabel>
-                      <Select
-                        multiple={["superadmin", "admin"].includes(selectedRoleName)}
-                        value={otor.brand_id}
-                        onChange={(e) => handleOtorisasiChange(i, "brand_id", e.target.value)}
-                        label="Brand"
-                        sx={{
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#166534',
-                          },
-                        }}
-                      >
-                        {brandList.map((b) => (
-                          <MenuItem key={b.id} value={b.id}>
-                            {b.nama_brand}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>                  
+                      <FormControl fullWidth margin="dense">
+                        <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                          Brand
+                        </InputLabel>
+                        <Select
+                          multiple={["superadmin", "admin"].includes(selectedRoleName)}
+                          value={otor.brand_id || []}
+                          onChange={(e) => handleOtorisasiChange(i, "brand_id", e.target.value)}
+                          label="Brand"
+                          sx={{
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#166534',
+                            },
+                          }}
+                        >
+                          {brandList.map(b => (
+                            <MenuItem key={b.id} value={b.id}>
+                              {b.nama_brand}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>                  
                   )}
                 </Grid>
               ))}
@@ -760,6 +981,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
           </Box>
         )}
       </DialogContent>
+      
       <DialogActions className="p-6">
         <Button 
           onClick={onClose}
