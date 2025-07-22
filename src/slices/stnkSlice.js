@@ -285,7 +285,6 @@ const stnkSlice = createSlice({
           }));
 
           state.list = [...state.list, ...transformedData];
-          console.log(`Successfully added ${transformedData.length} STNK records to state`);
         }
       })
       .addCase(processStnkBatch.rejected, (state, action) => {

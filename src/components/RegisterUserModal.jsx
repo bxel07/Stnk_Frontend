@@ -207,7 +207,6 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
         glbm_brand_ids: form.glbm_brand_ids.map(Number),
       };
       
-      console.log("Payload register user:", payload);
       await axios.post(`${baseUrl}/api/register`, payload, config);
       Swal.fire({
         title: "Berhasil!",

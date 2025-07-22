@@ -11,7 +11,6 @@ const axiosInstance = axios.create({
 // ✅ Interceptor: Tambahkan token JWT secara otomatis
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  // console.log("TOKEN DIKIRIM:", token);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

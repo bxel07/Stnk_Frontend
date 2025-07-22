@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import Swal from "sweetalert2";
 import {
   Typography, Paper, Box, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, CircularProgress, Alert, Card, CardContent,
@@ -164,6 +165,21 @@ const UserListPage = () => {
   const handleSave = async () => {
     await fetchUsers();
     setModalOpen(false);
+    
+    // Toast notification untuk berhasil update user
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil!',
+      text: 'Data pengguna berhasil diperbarui',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      customClass: {
+        popup: 'colored-toast'
+      }
+    });
   };
 
   const getUniqueRoles = () => {
@@ -319,7 +335,7 @@ const UserListPage = () => {
               <Box className="flex items-center gap-2">
                 <Group sx={{ color: '#166534', fontSize: 24 }} />
                 <Typography variant="h6" className="font-bold text-gray-800">
-                  Daftar Akun ({filteredUsers.length})
+                  Daftar Akun
                 </Typography>
               </Box>
               <Chip 
@@ -426,7 +442,23 @@ const UserListPage = () => {
       <RegisterUserModal 
         open={registerModalOpen}
         onClose={() => setRegisterModalOpen(false)}
-        onSuccess={fetchUsers}
+        onSuccess={() => {
+          fetchUsers();
+          // Toast notification untuk berhasil registrasi user
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: 'Akun pengguna baru berhasil dibuat',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+              popup: 'colored-toast'
+            }
+          });
+        }}
       />
     </Box>
   );
@@ -507,8 +539,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
       if (!open) return;
       
       try {
-        console.log("Fetching master data...");
-        
         const [ptRes, brandRes, samsatRes] = await Promise.all([
           axios.get(`${BASE_URL}/glbm-pt`, config),
           axios.get(`${BASE_URL}/glbm-brand`, config),
@@ -523,18 +553,12 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
         setBrandList(brandData);
         setSamsatList(samsatData);
 
-        console.log("Master data loaded:", {
-          pt: ptData.length,
-          brand: brandData.length,
-          samsat: samsatData.length
-        });
-
         // Fetch roles
         const rolesData = [
-          { id: 1, name: "superadmin" },
-          { id: 2, name: "admin" },
-          { id: 3, name: "cao" },
-          { id: 4, name: "user" }
+          { id: 4, name: "superadmin" },
+          { id: 3, name: "admin" },
+          { id: 2, name: "cao" },
+          { id: 1, name: "user" }
         ];
         setRoles(rolesData);
 
@@ -554,8 +578,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
       
       setLoading(true);
       try {
-        console.log("Fetching user data for ID:", userId);
-        
         const usersRes = await axios.get(`${BASE_URL}/users`, config);
         const userList = usersRes.data.data || [];
         const userData = userList.find((item) => item.id === userId);
@@ -564,8 +586,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
           setErrorMsg("User tidak ditemukan");
           return;
         }
-
-        console.log("User data found:", userData);
 
         // Process otorisasi data - struktur yang benar
         let otorisasiData = [];
@@ -591,10 +611,10 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
         } else if (userData.role && typeof userData.role === 'string') {
           // Map string role ke ID
           const roleMapping = {
-            "superadmin": 1,
-            "admin": 2, 
-            "cao": 3,
-            "user": 4
+            "user": 1,
+            "cao": 2,
+            "admin": 3, 
+            "superadmin": 4
           };
           roleId = roleMapping[userData.role] || "";
         }
@@ -615,10 +635,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
           const role = roles.find(r => r.id === parseInt(roleId));
           if (role) setSelectedRoleName(role.name);
         }
-
-        console.log("Form data set:", formData);
-        console.log("Selected role name:", userData.role);
-        console.log("Processed otorisasi:", otorisasiData);
 
       } catch (err) {
         console.error("Error fetching user:", err);
@@ -680,11 +696,42 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
       };
       
       await axios.put(`${BASE_URL}/update-user/${userId}`, payload, config);
+      
+      // Toast notification untuk berhasil update
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'Data pengguna berhasil diperbarui',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        customClass: {
+          popup: 'colored-toast'
+        }
+      });
+      
       onSaved();
       onClose();
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.response?.data?.message || err.message;
       setErrorMsg(msg);
+      
+      // Toast notification untuk error
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: `Gagal memperbarui data: ${msg}`,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+        customClass: {
+          popup: 'colored-toast'
+        }
+      });
     }
   };
 

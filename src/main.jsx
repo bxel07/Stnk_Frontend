@@ -14,13 +14,12 @@ import Dashboard from "@/features/dashboard/pages/Dashboard.jsx";
 import STNKDataTable from "@/features/stnk/pages/STNKDataTable.jsx";
 import STNKUpload from "@/features/stnk/pages/STNKUpload.jsx";
 import LoginPage from "@/features/auth/pages/LoginPage.jsx";
-import RegisterPage from "@/features/auth/pages/RegisterPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx"; // kita akan update ini
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UserListPage from "@/pages/UserListPage";
 import ProfilePage from "@/pages/ProfilePage";
-import UserEditPage from "@/pages/UserEditPage";
+import RegisterUserModal from "./components/RegisterUserModal.jsx";
 
 
 
@@ -46,12 +45,11 @@ createRoot(document.getElementById("root")).render(
             <Route
               path="/admin/register"
               element={<ProtectedRoute allowedRoles={["admin", "superadmin"]}>
-                <RegisterPage />
+                <RegisterUserModal />
               </ProtectedRoute>}
             />
             <Route path="/admin/users" element={<ProtectedRoute><UserListPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/users/edit/:id" element={<UserEditPage />} />
 
           </Route>
         </Routes>
