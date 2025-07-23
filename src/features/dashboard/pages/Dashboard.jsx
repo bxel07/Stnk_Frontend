@@ -92,6 +92,7 @@ function Dashboard() {
         return 'Pengguna sistem STNK Reader';
     }
   };
+  
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -166,7 +167,7 @@ function Dashboard() {
         <Card className="shadow-lg rounded-2xl">
           <CardContent className="p-6">
             <Box className="flex items-center gap-4">
-              <Avatar 
+            <Avatar 
                 sx={{ 
                   width: 80, 
                   height: 80,
@@ -175,8 +176,9 @@ function Dashboard() {
                   fontSize: '2rem',
                   fontWeight: 'bold'
                 }}>
-                {getInitials(user.name || user.userName)}
-              </Avatar>
+                {getInitials(user.username)}
+            </Avatar>
+
               
               <Box className="flex-1">
                 <Box className="flex items-center gap-3 mb-2">

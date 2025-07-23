@@ -35,7 +35,9 @@ import {
   MenuItem,
   Collapse,
   Fade,
-  Slide
+  Slide,
+  ToggleButton,
+  ToggleButtonGroup
 } from "@mui/material";
 import {
   FilterList,
@@ -49,7 +51,9 @@ import {
   LocalOffer,
   AccountBalance,
   Save,
-  Cancel
+  Cancel,
+  LocationOn,
+  Map
 } from "@mui/icons-material";
 
 const BASE_URL = import.meta.env.VITE_API_URL + "/api";
@@ -61,26 +65,35 @@ const MasterDataPage = () => {
   // State untuk tab aktif
   const [activeTab, setActiveTab] = useState(0);
   
+  // Tidak perlu sub-tab lagi, wilayah cakupan langsung ditampilkan
+  
   // State untuk data master
   const [ptData, setPtData] = useState([]);
   const [brandData, setBrandData] = useState([]);
   const [samsatData, setSamsatData] = useState([]);
+  const [wilayahData, setWilayahData] = useState([]);
   const [wilayahCakupanData, setWilayahCakupanData] = useState([]);
+  const [samsatWilayahCakupanData, setSamsatWilayahCakupanData] = useState([]); // Untuk dropdown samsat
   
   // State untuk loading
   const [ptLoading, setPtLoading] = useState(false);
   const [brandLoading, setBrandLoading] = useState(false);
   const [samsatLoading, setSamsatLoading] = useState(false);
+  const [wilayahLoading, setWilayahLoading] = useState(false);
+  const [wilayahCakupanLoading, setWilayahCakupanLoading] = useState(false);
   
   // State untuk error
   const [ptError, setPtError] = useState(null);
   const [brandError, setBrandError] = useState(null);
   const [samsatError, setSamsatError] = useState(null);
+  const [wilayahError, setWilayahError] = useState(null);
+  const [wilayahCakupanError, setWilayahCakupanError] = useState(null);
 
   // State untuk dialog
   const [addDialog, setAddDialog] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [addWilayahCakupanDialog, setAddWilayahCakupanDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
 
   // State untuk form
@@ -92,6 +105,8 @@ const MasterDataPage = () => {
     nama_samsat: '',
     kode_samsat: '',
     wilayah_cakupan_id: '',
+    nama_wilayah: '',
+    wilayah_id: '',
     status: 'aktif'
   });
 
@@ -99,10 +114,34 @@ const MasterDataPage = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Fetch wilayah cakupan untuk dropdown samsat
-  const fetchWilayahCakupan = async () => {
+  // Fetch functions untuk semua data
+  const fetchWilayahData = async () => {
+    setWilayahLoading(true);
+    setWilayahError(null);
     try {
-      const response = await fetch(`${BASE_URL}/detail-otorisasi-samsat`, {
+      const response = await fetch(`${BASE_URL}/wilayah`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        setWilayahData(data.data);
+      } else {
+        setWilayahError(data.message || 'Failed to fetch Wilayah data');
+      }
+    } catch (err) {
+      setWilayahError(err.message);
+    } finally {
+      setWilayahLoading(false);
+    }
+  };
+
+  const fetchWilayahCakupanData = async () => {
+    setWilayahCakupanLoading(true);
+    setWilayahCakupanError(null);
+    try {
+      const response = await fetch(`${BASE_URL}/wilayah-cakupan`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -110,13 +149,38 @@ const MasterDataPage = () => {
       const data = await response.json();
       if (data.status === 'success') {
         setWilayahCakupanData(data.data);
+      } else {
+        setWilayahCakupanError(data.message || 'Failed to fetch Wilayah Cakupan data');
       }
     } catch (err) {
-      console.error('Error fetching wilayah cakupan:', err);
+      setWilayahCakupanError(err.message);
+    } finally {
+      setWilayahCakupanLoading(false);
     }
   };
 
-  // Fetch data functions
+  const fetchSamsatWilayahCakupan = async () => {
+    try {
+      // Gunakan endpoint wilayah-cakupan yang baru untuk dropdown samsat
+      const response = await fetch(`${BASE_URL}/wilayah-cakupan`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        // Transform data untuk dropdown samsat
+        const transformedData = data.data.map(item => ({
+          id_wilayah_cakupan: item.id,
+          nama_wilayah_cakupan: item.nama_wilayah
+        }));
+        setSamsatWilayahCakupanData(transformedData);
+      }
+    } catch (err) {
+      console.error('Error fetching samsat wilayah cakupan:', err);
+    }
+  };
+
   const fetchPtData = async () => {
     setPtLoading(true);
     setPtError(null);
@@ -165,19 +229,26 @@ const MasterDataPage = () => {
     setSamsatLoading(true);
     setSamsatError(null);
     try {
-      const response = await fetch(`${BASE_URL}/glbm-samsat`, {
+      const response = await fetch(`${BASE_URL}/glbm-samsat/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       if (data.status === 'success') {
         setSamsatData(data.data);
       } else {
         setSamsatError(data.message || 'Failed to fetch Samsat data');
+        console.error('Samsat fetch error:', data.message);
       }
     } catch (err) {
       setSamsatError(err.message);
+      console.error('Error fetching samsat data:', err);
     } finally {
       setSamsatLoading(false);
     }
@@ -185,8 +256,8 @@ const MasterDataPage = () => {
 
   // Effect untuk fetch data berdasarkan tab aktif
   useEffect(() => {
-    // Fetch wilayah cakupan saat component mount
-    fetchWilayahCakupan();
+    // Fetch data umum saat component mount
+    fetchSamsatWilayahCakupan();
     
     switch (activeTab) {
       case 0:
@@ -197,6 +268,11 @@ const MasterDataPage = () => {
         break;
       case 2:
         fetchSamsatData();
+        break;
+      case 3:
+        // Fetch kedua data wilayah dan wilayah cakupan
+        fetchWilayahData();
+        fetchWilayahCakupanData();
         break;
       default:
         break;
@@ -217,9 +293,29 @@ const MasterDataPage = () => {
       nama_samsat: '',
       kode_samsat: '',
       wilayah_cakupan_id: '',
+      nama_wilayah: '',
+      wilayah_id: '',
       status: 'aktif'
     });
     setAddDialog(true);
+  };
+
+  const handleAddWilayahCakupan = () => {
+    console.log('handleAddWilayahCakupan called'); // Debug log
+    setFormData({
+      nama_pt: '',
+      kode_pt: '',
+      nama_brand: '',
+      kode_brand: '',
+      nama_samsat: '',
+      kode_samsat: '',
+      wilayah_cakupan_id: '',
+      nama_wilayah: '',
+      wilayah_id: '',
+      status: 'aktif'
+    });
+    setAddWilayahCakupanDialog(true);
+    console.log('addWilayahCakupanDialog set to true'); // Debug log
   };
 
   const handleEdit = (record) => {
@@ -232,6 +328,8 @@ const MasterDataPage = () => {
       nama_samsat: record.nama_samsat || '',
       kode_samsat: record.kode_samsat || '',
       wilayah_cakupan_id: record.wilayah_cakupan_id || '',
+      nama_wilayah: record.nama_wilayah || '',
+      wilayah_id: record.wilayah_id || '',
       status: record.status || 'aktif'
     });
     setEditDialog(true);
@@ -247,7 +345,7 @@ const MasterDataPage = () => {
     let endpoint, method, url, requestBody;
 
     if (isEdit) {
-      // Edit endpoints - sesuai dengan backend
+      // Edit endpoints
       switch (activeTab) {
         case 0: // PT
           endpoint = `/update-pt/${selectedRecord.id}`;
@@ -271,11 +369,17 @@ const MasterDataPage = () => {
             wilayah_cakupan_id: parseInt(formData.wilayah_cakupan_id)
           };
           break;
+        case 3: // Wilayah
+          endpoint = `/wilayah/${selectedRecord.id}`;
+          requestBody = {
+            nama_wilayah: formData.nama_wilayah
+          };
+          break;
       }
       method = 'PUT';
       url = `${BASE_URL}${endpoint}`;
     } else {
-      // Add endpoints - tetap sama
+      // Add endpoints
       switch (activeTab) {
         case 0: // PT
           endpoint = '/add-pt';
@@ -297,6 +401,12 @@ const MasterDataPage = () => {
             nama_samsat: formData.nama_samsat,
             kode_samsat: formData.kode_samsat,
             wilayah_cakupan_id: parseInt(formData.wilayah_cakupan_id)
+          };
+          break;
+        case 3: // Wilayah
+          endpoint = '/wilayah';
+          requestBody = {
+            nama_wilayah: formData.nama_wilayah
           };
           break;
       }
@@ -330,6 +440,35 @@ const MasterDataPage = () => {
     }
   };
 
+  const handleWilayahCakupanSubmit = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/wilayah-cakupan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          nama_wilayah: formData.nama_wilayah,
+          wilayah_id: parseInt(formData.wilayah_id)
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        toast.success('Wilayah Cakupan berhasil ditambahkan');
+        setAddWilayahCakupanDialog(false);
+        // Refresh data wilayah cakupan
+        fetchWilayahCakupanData();
+      } else {
+        toast.error(data.message || 'Gagal menambahkan wilayah cakupan');
+      }
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!selectedRecord) return;
 
@@ -344,7 +483,6 @@ const MasterDataPage = () => {
 
       const data = await response.json();
       
-      // Check response based on endpoint format
       const isSuccess = data.status === 'success' || data.message?.includes('berhasil dihapus');
       
       if (isSuccess) {
@@ -360,12 +498,13 @@ const MasterDataPage = () => {
     }
   };
 
-  // Helper functions untuk delete endpoints
+  // Helper functions
   const getDeleteEndpoint = () => {
     switch (activeTab) {
       case 0: return '/delete-pt';
       case 1: return '/delete-brand';
       case 2: return '/delete-glbm-samsat';
+      case 3: return '/delete-wilayah';
       default: return '/delete-pt';
     }
   };
@@ -375,6 +514,7 @@ const MasterDataPage = () => {
       case 0: return ptData;
       case 1: return brandData;
       case 2: return samsatData;
+      case 3: return wilayahData;
       default: return [];
     }
   };
@@ -384,6 +524,7 @@ const MasterDataPage = () => {
       case 0: return ptLoading;
       case 1: return brandLoading;
       case 2: return samsatLoading;
+      case 3: return wilayahLoading;
       default: return false;
     }
   };
@@ -393,6 +534,7 @@ const MasterDataPage = () => {
       case 0: return ptError;
       case 1: return brandError;
       case 2: return samsatError;
+      case 3: return wilayahError;
       default: return null;
     }
   };
@@ -402,6 +544,7 @@ const MasterDataPage = () => {
       case 0: fetchPtData(); break;
       case 1: fetchBrandData(); break;
       case 2: fetchSamsatData(); break;
+      case 3: fetchWilayahData(); break;
       default: break;
     }
   };
@@ -410,7 +553,8 @@ const MasterDataPage = () => {
     const configs = [
       { label: 'Data PT', icon: Business, title: 'Data PT', emptyMessage: 'Belum ada data PT' },
       { label: 'Data Brand', icon: LocalOffer, title: 'Data Brand', emptyMessage: 'Belum ada data Brand' },
-      { label: 'Data Samsat', icon: AccountBalance, title: 'Data Samsat', emptyMessage: 'Belum ada data Samsat' }
+      { label: 'Data Samsat', icon: AccountBalance, title: 'Data Samsat', emptyMessage: 'Belum ada data Samsat' },
+      { label: 'Data Wilayah', icon: LocationOn, title: 'Data Wilayah', emptyMessage: 'Belum ada data Wilayah' }
     ];
     return configs[activeTab];
   };
@@ -420,7 +564,8 @@ const MasterDataPage = () => {
       case 0: return record.nama_pt;
       case 1: return record.nama_brand;
       case 2: return record.nama_samsat;
-      default: return record.nama || record.nama_pt || record.nama_brand || record.nama_samsat;
+      case 3: return record.nama_wilayah;
+      default: return record.nama || record.nama_pt || record.nama_brand || record.nama_samsat || record.nama_wilayah;
     }
   };
 
@@ -429,8 +574,51 @@ const MasterDataPage = () => {
       case 0: return record.kode_pt;
       case 1: return record.kode_brand;
       case 2: return record.kode_samsat;
-      default: return record.kode || record.kode_pt || record.kode_brand || record.kode_samsat;
+      case 3: return record.id;
+      default: return record.kode || record.kode_pt || record.kode_brand || record.kode_samsat || record.id;
     }
+  };
+
+  // Function to get table columns based on active tab
+  const getTableColumns = () => {
+    let baseColumns = [
+      { id: 'no', label: 'No', minWidth: 50 }
+    ];
+
+    switch (activeTab) {
+      case 0: // PT
+        baseColumns.push(
+          { id: 'nama', label: 'Nama PT', minWidth: 200 },
+          { id: 'kode', label: 'Kode PT', minWidth: 120 }
+        );
+        break;
+      case 1: // Brand
+        baseColumns.push(
+          { id: 'nama', label: 'Nama Brand', minWidth: 200 },
+          { id: 'kode', label: 'Kode Brand', minWidth: 120 }
+        );
+        break;
+      case 2: // Samsat
+        baseColumns.push(
+          { id: 'nama', label: 'Nama Samsat', minWidth: 200 },
+          { id: 'kode', label: 'Kode Samsat', minWidth: 120 },
+          { id: 'wilayah', label: 'Wilayah', minWidth: 150 },
+          { id: 'wilayah_cakupan', label: 'Wilayah Cakupan', minWidth: 150 }
+        );
+        break;
+      case 3: // Wilayah
+        baseColumns.push(
+          { id: 'nama', label: 'Nama Wilayah', minWidth: 200 },
+          { id: 'wilayah_cakupan', label: 'Wilayah Cakupan', minWidth: 250 },
+          { id: 'kode', label: 'ID', minWidth: 120 }
+        );
+        break;
+        
+    }
+
+    baseColumns.push({ id: 'actions', label: 'Actions', minWidth: 120, align: 'center' });
+    
+    return baseColumns;
   };
 
   // Render functions
@@ -521,11 +709,14 @@ const MasterDataPage = () => {
             value={activeTab} 
             onChange={handleTabChange} 
             aria-label="Master data tabs"
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{
               '& .MuiTab-root': {
                 color: '#bbf7d0',
                 fontWeight: 600,
                 textTransform: 'none',
+                minWidth: 120,
                 '&.Mui-selected': {
                   color: 'white'
                 }
@@ -557,17 +748,30 @@ const MasterDataPage = () => {
                   Data Samsat
                 </Box>
               } />
+            <Tab 
+              label={
+                <Box className="flex items-center gap-2">
+                  <LocationOn />
+                  Data Wilayah
+                </Box>
+              } />
           </Tabs>
         </Box>
       </Card>
     </Fade>
   );
 
+  const renderWilayahSubTabs = () => {
+    // Tidak perlu sub-tabs lagi
+    return null;
+  };
+
   const renderTable = () => {
     const data = getCurrentData();
     const loading = getCurrentLoading();
     const error = getCurrentError();
     const config = getTabConfig();
+    const columns = getTableColumns();
 
     // Filter data berdasarkan status
     const filteredData = statusFilter 
@@ -601,6 +805,32 @@ const MasterDataPage = () => {
                     </Typography>
                   </Box>
                 )}
+                
+                {/* Button khusus untuk tab wilayah */}
+                {activeTab === 3 && (
+                  <Button
+                    onClick={() => {
+                      console.log('Button Tambah Wilayah Cakupan clicked'); // Debug log
+                      handleAddWilayahCakupan();
+                    }}
+                    variant="outlined"
+                    startIcon={<Map />}
+                    sx={{
+                      color: '#16a34a',
+                      borderColor: '#16a34a',
+                      px: 3,
+                      py: 1,
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderColor: '#15803d',
+                        backgroundColor: '#f0fdf4'
+                      }
+                    }}>
+                    Tambah Wilayah Cakupan
+                  </Button>
+                )}
+                
                 <Button
                   onClick={handleAddNew}
                   variant="contained"
@@ -648,14 +878,17 @@ const MasterDataPage = () => {
                 <Table stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell className="bg-green-100 font-bold text-green-800">No</TableCell>
-                      <TableCell className="bg-green-100 font-bold text-green-800">
-                        {activeTab === 0 ? 'Nama PT' : activeTab === 1 ? 'Nama Brand' : 'Nama Samsat'}
-                      </TableCell>
-                      <TableCell className="bg-green-100 font-bold text-green-800">
-                        {activeTab === 0 ? 'Kode PT' : activeTab === 1 ? 'Kode Brand' : 'Kode Samsat'}
-                      </TableCell>
-                      <TableCell className="bg-green-100 font-bold text-green-800 justify-center">Actions</TableCell>
+                      {columns.map((column) => (
+                        <TableCell
+                          key={column.id}
+                          className="bg-green-100 font-bold text-green-800"
+                          style={{ 
+                            minWidth: column.minWidth,
+                            textAlign: column.align || 'left'
+                          }}>
+                          {column.label}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -666,9 +899,36 @@ const MasterDataPage = () => {
                         className="cursor-pointer">
                         <TableCell className="font-mono text-sm">{index + 1}</TableCell>
                         <TableCell className="font-medium">{getFieldName(row) || "-"}</TableCell>
-                        <TableCell className="font-mono text-sm">{getFieldCode(row) || "-"}</TableCell>
-                        <TableCell>
-                          <Box className="justify-center gap-1">
+                        
+                        {/* Render cells based on active tab */}
+                        {activeTab === 2 && (
+                          <>
+                            <TableCell className="font-mono text-sm">{getFieldCode(row) || "-"}</TableCell>
+                            <TableCell className="font-medium">{row.wilayah || "-"}</TableCell>
+                            <TableCell className="font-medium">{row.wilayah_cakupan || "-"}</TableCell>
+                          </>
+                        )}
+                        
+                        {activeTab === 3 && (
+                          <>
+                            <TableCell className="font-medium">
+                              {/* Tampilkan wilayah cakupan yang terkait dengan wilayah ini */}
+                              {wilayahCakupanData
+                                .filter(cakupan => cakupan.wilayah_induk && cakupan.wilayah_induk.id === row.id)
+                                .map(cakupan => cakupan.nama_wilayah)
+                                .filter((value, index, self) => self.indexOf(value) === index) // Remove duplicates
+                                .join(', ') || "-"}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">{getFieldCode(row) || "-"}</TableCell>
+                          </>
+                        )}
+                        
+                        {(activeTab === 0 || activeTab === 1) && (
+                          <TableCell className="font-mono text-sm">{getFieldCode(row) || "-"}</TableCell>
+                        )}
+                        
+                        <TableCell style={{ textAlign: 'center' }}>
+                          <Box className="flex justify-center gap-1">
                             <Tooltip title="Edit">
                               <IconButton
                                 size="small"
@@ -803,13 +1063,30 @@ const MasterDataPage = () => {
                 label="Wilayah Cakupan"
                 onChange={(e) => setFormData({ ...formData, wilayah_cakupan_id: e.target.value })}
                 sx={{ borderRadius: 2 }}>
-                {wilayahCakupanData.map((wilayah) => (
+                {samsatWilayahCakupanData.map((wilayah) => (
                   <MenuItem key={wilayah.id_wilayah_cakupan} value={wilayah.id_wilayah_cakupan}>
                     {wilayah.nama_wilayah_cakupan}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+          </>
+        );
+      case 3: // Wilayah
+        return (
+          <>
+            <TextField
+              label="Nama Wilayah"
+              fullWidth
+              variant="outlined"
+              value={formData.nama_wilayah}
+              onChange={(e) => setFormData({ ...formData, nama_wilayah: e.target.value })}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  backgroundColor: 'white'
+                }
+              }}/>
           </>
         );
       default:
@@ -825,8 +1102,120 @@ const MasterDataPage = () => {
       {/* Tabs */}
       {renderTabs()}
 
+      {/* Sub Tabs for Wilayah */}
+      {renderWilayahSubTabs()}
+
       {/* Table Content */}
       {renderTable()}
+
+      {/* Add Wilayah Cakupan Dialog */}
+      <Dialog
+        open={addWilayahCakupanDialog}
+        onClose={() => setAddWilayahCakupanDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          className: "rounded-2xl"
+        }}>
+        <DialogTitle className="bg-gradient-to-r from-blue-50 to-blue-100 p-6">
+          <Box className="flex justify-between items-center">
+            <Box className="flex items-center gap-3">
+              <Box className="bg-blue-100 p-2 rounded-full">
+                <Map sx={{ color: '#2563eb', fontSize: 24 }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" className="text-blue-800 font-bold">
+                  Tambah Wilayah Cakupan
+                </Typography>
+                <Typography variant="body2" className="text-blue-600">
+                  Masukkan informasi wilayah cakupan baru
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton
+              onClick={() => setAddWilayahCakupanDialog(false)}
+              sx={{
+                color: '#6b7280',
+                '&:hover': {
+                  backgroundColor: '#f3f4f6'
+                }
+              }}>
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <Divider />
+        <DialogContent className="p-6">
+          <Box className="space-y-4">
+            <TextField
+              label="Nama Wilayah Cakupan"
+              fullWidth
+              variant="outlined"
+              value={formData.nama_wilayah}
+              onChange={(e) => setFormData({ ...formData, nama_wilayah: e.target.value })}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  backgroundColor: 'white'
+                }
+              }}/>
+            <FormControl fullWidth>
+              <InputLabel>Wilayah Induk</InputLabel>
+              <Select
+                value={formData.wilayah_id}
+                label="Wilayah Induk"
+                onChange={(e) => setFormData({ ...formData, wilayah_id: e.target.value })}
+                sx={{ borderRadius: 2 }}>
+                {wilayahData.map((wilayah) => (
+                  <MenuItem key={wilayah.id} value={wilayah.id}>
+                    {wilayah.nama_wilayah}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <Divider />
+        <DialogActions className="p-6 bg-gray-50">
+          <Box className="flex gap-3 w-full justify-end">
+            <Button
+              onClick={() => setAddWilayahCakupanDialog(false)}
+              variant="outlined"
+              startIcon={<Cancel />}
+              sx={{
+                color: '#6b7280',
+                borderColor: '#d1d5db',
+                px: 4,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 600,
+                '&:hover': {
+                  borderColor: '#9ca3af',
+                  backgroundColor: '#f9fafb'
+                }
+              }}>
+              Batal
+            </Button>
+            <Button
+              onClick={handleWilayahCakupanSubmit}
+              variant="contained"
+              startIcon={<Save />}
+              sx={{
+                bgcolor: '#2563eb',
+                color: 'white',
+                px: 4,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 600,
+                '&:hover': {
+                  bgcolor: '#1d4ed8'
+                }
+              }}>
+              Simpan
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Dialog */}
       <Dialog

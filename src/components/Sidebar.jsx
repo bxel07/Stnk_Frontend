@@ -28,7 +28,7 @@ function Sidebar({ sidebarOpen }) {
         label: "Master Data",
         icon: "bi bi-database-fill",
         link: "/master-data",
-        type: "Master Data" ,
+        type: "Umum" ,
       }
     );
   }
