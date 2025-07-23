@@ -370,7 +370,7 @@ const MasterDataPage = () => {
           };
           break;
         case 3: // Wilayah
-          endpoint = `/wilayah/${selectedRecord.id}`;
+          endpoint = `/update-wilayah/${selectedRecord.id}`;
           requestBody = {
             nama_wilayah: formData.nama_wilayah
           };
@@ -807,6 +807,25 @@ const MasterDataPage = () => {
                 
                 {/* Button khusus untuk tab wilayah */}
                 {activeTab === 3 && (
+                    <Button
+                    onClick={handleAddNew}
+                    variant="contained"
+                    startIcon={<Add />}
+                    sx={{
+                      bgcolor: '#16a34a',
+                      color: 'white',
+                      px: 3,
+                      py: 1,
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      '&:hover': {
+                        bgcolor: '#15803d'
+                      }
+                    }}>
+                    Tambah Data
+                  </Button>
+                )}
+                {activeTab === 3 && (
                   <Button
                     onClick={() => {
                       console.log('Button Tambah Wilayah Cakupan clicked'); // Debug log
@@ -830,23 +849,7 @@ const MasterDataPage = () => {
                   </Button>
                 )}
                 
-                <Button
-                  onClick={handleAddNew}
-                  variant="contained"
-                  startIcon={<Add />}
-                  sx={{
-                    bgcolor: '#16a34a',
-                    color: 'white',
-                    px: 3,
-                    py: 1,
-                    borderRadius: 2,
-                    fontWeight: 600,
-                    '&:hover': {
-                      bgcolor: '#15803d'
-                    }
-                  }}>
-                  Tambah Data
-                </Button>
+                
               </Box>
             </Box>
           </Box>
