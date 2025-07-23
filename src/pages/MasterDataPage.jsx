@@ -600,17 +600,16 @@ const MasterDataPage = () => {
         break;
       case 2: // Samsat
         baseColumns.push(
+          { id: 'wilayah', label: 'Wilayah', minWidth: 150 },
+          { id: 'wilayah_cakupan', label: 'Wilayah Cakupan', minWidth: 150 },
           { id: 'nama', label: 'Nama Samsat', minWidth: 200 },
           { id: 'kode', label: 'Kode Samsat', minWidth: 120 },
-          { id: 'wilayah', label: 'Wilayah', minWidth: 150 },
-          { id: 'wilayah_cakupan', label: 'Wilayah Cakupan', minWidth: 150 }
         );
         break;
       case 3: // Wilayah
         baseColumns.push(
           { id: 'nama', label: 'Nama Wilayah', minWidth: 200 },
           { id: 'wilayah_cakupan', label: 'Wilayah Cakupan', minWidth: 250 },
-          { id: 'kode', label: 'ID', minWidth: 120 }
         );
         break;
         
@@ -897,20 +896,29 @@ const MasterDataPage = () => {
                         key={row.id} 
                         hover 
                         className="cursor-pointer">
-                        <TableCell className="font-mono text-sm">{index + 1}</TableCell>
-                        <TableCell className="font-medium">{getFieldName(row) || "-"}</TableCell>
-                        
                         {/* Render cells based on active tab */}
-                        {activeTab === 2 && (
+                        {(activeTab === 0 || activeTab === 1) && (
                           <>
+                            <TableCell className="font-mono text-sm">{index + 1}</TableCell>
+                            <TableCell className="font-medium">{getFieldName(row) || "-"}</TableCell>
                             <TableCell className="font-mono text-sm">{getFieldCode(row) || "-"}</TableCell>
-                            <TableCell className="font-medium">{row.wilayah || "-"}</TableCell>
-                            <TableCell className="font-medium">{row.wilayah_cakupan || "-"}</TableCell>
                           </>
                         )}
-                        
+
+                        {activeTab === 2 && (
+                          <>
+                            <TableCell className="font-mono text-sm">{index + 1}</TableCell>
+                            <TableCell className="font-medium">{row.wilayah || "-"}</TableCell>
+                            <TableCell className="font-medium">{row.wilayah_cakupan || "-"}</TableCell>
+                            <TableCell className="font-medium">{getFieldName(row) || "-"}</TableCell>
+                            <TableCell className="font-mono text-sm">{getFieldCode(row) || "-"}</TableCell>
+                          </>
+                        )}
+                
                         {activeTab === 3 && (
                           <>
+                            <TableCell className="font-mono text-sm">{index + 1}</TableCell>
+                            <TableCell className="font-medium">{getFieldName(row) || "-"}</TableCell>
                             <TableCell className="font-medium">
                               {/* Tampilkan wilayah cakupan yang terkait dengan wilayah ini */}
                               {wilayahCakupanData
@@ -919,14 +927,8 @@ const MasterDataPage = () => {
                                 .filter((value, index, self) => self.indexOf(value) === index) // Remove duplicates
                                 .join(', ') || "-"}
                             </TableCell>
-                            <TableCell className="font-mono text-sm">{getFieldCode(row) || "-"}</TableCell>
                           </>
                         )}
-                        
-                        {(activeTab === 0 || activeTab === 1) && (
-                          <TableCell className="font-mono text-sm">{getFieldCode(row) || "-"}</TableCell>
-                        )}
-                        
                         <TableCell style={{ textAlign: 'center' }}>
                           <Box className="flex justify-center gap-1">
                             <Tooltip title="Edit">
