@@ -201,7 +201,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
       ) {
         throw new Error("Semua field wajib diisi");
       }
-     if (["superadmin", "admin"].includes(roleName) && form.glbm_pt_id.length === 0) {
+      if (["superadmin", "admin"].includes(roleName) && form.glbm_pt_id.length === 0) {
         throw new Error("PT harus dipilih");
       }
       if (roleName === "admin" && form.glbm_pt_id.length !== 1) {
@@ -304,8 +304,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={inputFocusStyles}
-                />
+                  sx={inputFocusStyles}/>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
@@ -322,8 +321,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={inputFocusStyles}
-                />
+                  sx={inputFocusStyles}/>
               </Grid>
             </Grid>
           </Box>
@@ -336,8 +334,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                 name="role_id"
                 value={form.role_id}
                 onChange={handleChange}
-                sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
-              >
+                sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}>
                 {roles
                   .filter((r) => (currentUserRole === "admin" ? ["user", "cao"].includes(r.name) : true))
                   .map((r) => (
@@ -354,8 +351,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                 <Chip
                   label={`Role dipilih: ${getRoleName()}`}
                   icon={getRoleIcon(getRoleName())}
-                  sx={{ bgcolor: "#166534", color: "white", fontWeight: 600 }}
-                />
+                  sx={{ bgcolor: "#166534", color: "white", fontWeight: 600 }}/>
               </Box>
             )}
           </Box>
@@ -374,8 +370,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                   name="nama_lengkap"
                   value={form.nama_lengkap}
                   onChange={handleChange}
-                  sx={inputFocusStyles}
-                />
+                  sx={inputFocusStyles}/>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
@@ -392,8 +387,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={inputFocusStyles}
-                />
+                  sx={inputFocusStyles}/>
               </Grid>
             </Grid>
           </Box>
@@ -427,8 +421,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                             getRoleName() === "superadmin" ? value : [value],
                         }));
                       }}
-                      sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}
-                    >
+                      sx={{ "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#166534" } }}>
                       {ptList.map((pt) => (
                         <MenuItem key={pt.id} value={pt.id}>
                           <Box className="flex items-center gap-2">
@@ -485,8 +478,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                         "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                           borderColor: "#166534",
                         },
-                      }}
-                      >
+                      }}>
                       {brandList.map((b) => (
                         <MenuItem key={b.id} value={b.id}>
                           <Box className="flex items-center gap-2">
@@ -507,8 +499,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                             key={brandId}
                             label={brand.nama_brand}
                             size="small"
-                            sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-                          />
+                            sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}/>
                         ) : null;
                       })}
                     </Box>
@@ -542,9 +533,8 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                             <IconButton
                               size="small"
                               onClick={handleClearSearch}
-                              sx={{ color: "#666" }}
-                            >
-                              <Clear sx={{ fontSize: 18 }} />
+                              sx={{ color: "#666" }}>
+                              <Clear sx={{ fontSize: 18 }}/>
                             </IconButton>
                           </InputAdornment>
                         ),
@@ -581,8 +571,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                       <Button
                         size="small"
                         onClick={handleClearSearch}
-                        sx={{ mt: 1, color: '#166534' }}
-                      >
+                        sx={{ mt: 1, color: '#166534' }}>
                         Hapus pencarian
                       </Button>
                     </Box>
@@ -602,8 +591,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                             bgcolor: isFullySelected ? "#f0f9ff" : isPartiallySelected ? "#fffbeb" : "#f9fafb",
                             borderRadius: "8px",
                             "&:hover": { bgcolor: "#f3f4f6" }
-                          }}
-                        >
+                          }}>
                           <Box className="flex items-center justify-between w-full mr-4">
                             <Box className="flex items-center gap-2">
                               <FormControlLabel
@@ -617,12 +605,10 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                                       color: "#166534",
                                       "&.Mui-checked": { color: "#166534" },
                                       "&.MuiCheckbox-indeterminate": { color: "#f59e0b" }
-                                    }}
-                                  />
+                                    }}/>
                                 }
                                 label=""
-                                sx={{ margin: 0 }}
-                              />
+                                sx={{ margin: 0 }}/>
                               <Box>
                                 <Typography variant="subtitle2" className="font-semibold">
                                   {region}
@@ -662,8 +648,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                                       sx={{
                                         color: "#166534",
                                         "&.Mui-checked": { color: "#166534" }
-                                      }}
-                                    />
+                                      }}/>
                                   }
                                   label={
                                     <Box>
@@ -674,8 +659,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                                         #{samsat.kode_samsat}
                                       </Typography>
                                     </Box>
-                                  }
-                                />
+                                  }/>
                               </Grid>
                             ))}
                           </Grid>
@@ -702,8 +686,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
                                   glbm_samsat_id: prev.glbm_samsat_id.filter(id => id !== samsatId)
                                 }));
                               }}
-                              sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-                            />
+                              sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}/>
                           ) : null;
                         })}
                       </Box>
@@ -736,8 +719,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
             color: "#6b7280",
             "&:hover": { borderColor: "#4b5563", bgcolor: "#f9fafb" },
             fontWeight: 600,
-          }}
-        >
+          }}>
           Batal
         </Button>
         <Button
@@ -749,8 +731,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
             "&:hover": { bgcolor: "#0f5132" },
             fontWeight: 600,
             minWidth: "120px",
-          }}
-        >
+          }}>
           {loading ? (
             <Box className="flex items-center gap-2">
               <CircularProgress size={20} color="inherit" /> <span>Menyimpan...</span>

@@ -32,8 +32,7 @@ const ProtectedImage = ({ path, alt, className, onClick }) => {
       src={imageSrc}
       alt={alt}
       className={className}
-      onClick={onClick}
-    />
+      onClick={onClick}/>
   );
 };
 

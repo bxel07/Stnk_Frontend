@@ -143,14 +143,12 @@ function Dashboard() {
                 <Typography 
                   variant="h5" 
                   component="h1" 
-                  className="text-white font-bold mb-1"
-                >
+                  className="text-white font-bold mb-1">
                   STNK Reader Application
                 </Typography>
                 <Typography 
                   variant="subtitle1" 
-                  className="text-green-100 font-medium"
-                >
+                  className="text-green-100 font-medium">
                   Sistem Manajemen dan Pembaca STNK Digital
                 </Typography>
               </Box>
@@ -176,8 +174,7 @@ function Dashboard() {
                   color: 'white',
                   fontSize: '2rem',
                   fontWeight: 'bold'
-                }}
-              >
+                }}>
                 {getInitials(user.name || user.userName)}
               </Avatar>
               
@@ -203,8 +200,7 @@ function Dashboard() {
                         color: 'white',
                         fontWeight: 600,
                         fontSize: '0.875rem'
-                      }}
-                    />
+                      }}/>
                   </Box>
                   <Typography variant="body2" className="text-gray-600">
                     {getRoleDescription(user.role)}

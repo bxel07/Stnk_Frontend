@@ -7,8 +7,8 @@ const ZoomDialog = ({ open, onClose, image }) => {
   const [isPortrait, setIsPortrait] = useState(false);
 
   useEffect(() => {
-    const checkOrientation = () => {
-      const img = imgRef.current;
+  const checkOrientation = () => {
+    const img = imgRef.current;
       if (img && img.naturalHeight > img.naturalWidth) {
         setIsPortrait(true); // portrait, rotate to left (counter-clockwise)
       } else {
@@ -18,7 +18,7 @@ const ZoomDialog = ({ open, onClose, image }) => {
 
     if (open) {
       const timeout = setTimeout(checkOrientation, 100); // wait for image load
-      return () => clearTimeout(timeout);
+        return () => clearTimeout(timeout);
     }
   }, [open, image]);
 
@@ -32,8 +32,7 @@ const ZoomDialog = ({ open, onClose, image }) => {
           backgroundColor: "black",
           margin: 0,
         },
-      }}
-    >
+      }}>
       {/* Tombol Close */}
       <IconButton
         onClick={onClose}
@@ -48,18 +47,17 @@ const ZoomDialog = ({ open, onClose, image }) => {
             backgroundColor: "rgba(0,0,0,0.7)",
           },
         }}
-        size="large"
-      >
+        size="large">
         <CloseIcon />
       </IconButton>
 
       {/* Gambar dengan rotasi jika portrait */}
-      <img
-  ref={imgRef}
-  src={image.src}
-  alt={image.title}
-  onClick={onClose}
-  style={{
+    <img
+    ref={imgRef}
+    src={image.src}
+    alt={image.title}
+    onClick={onClose}
+    style={{
     width: isPortrait ? "100vh" : "100vw",
     height: isPortrait ? "100vw" : "100vh",
     transform: isPortrait ? "rotate(-90deg)" : "none",
@@ -69,8 +67,7 @@ const ZoomDialog = ({ open, onClose, image }) => {
     objectFit: "cover", // ganti dari 'contain' jadi 'cover'
     backgroundColor: "black",
     cursor: "zoom-out",
-  }}
-/>
+    }}/>
     </Dialog>
   );
 };

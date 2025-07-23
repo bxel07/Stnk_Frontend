@@ -8,8 +8,7 @@ import { fileURLToPath } from "url"
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// GANTI ini dengan alamat backend FastAPI kamu
-const backendUrl = "http://127.0.0.1:8000"; // atau misalnya: http://localhost:8000/api
+const backendUrl = "http://127.0.0.1:8000";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

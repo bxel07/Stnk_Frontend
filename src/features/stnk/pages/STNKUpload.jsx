@@ -89,7 +89,7 @@ const STNKUpload = () => {
       reader.readAsDataURL(file);
     });
 
-    const updatedImages = [...selectedImages, ...newImages];
+  const updatedImages = [...selectedImages, ...newImages];
     setSelectedImages(updatedImages);
     if (newImages.length > 0) processSTNKBatchRequest(updatedImages);
   };
@@ -276,14 +276,12 @@ const STNKUpload = () => {
                 <Typography 
                   variant="h5" 
                   component="h1" 
-                  className="text-white font-bold mb-1"
-                >
+                  className="text-white font-bold mb-1">
                   Upload & Process STNK
                 </Typography>
                 <Typography 
                   variant="subtitle1" 
-                  className="text-green-100 font-medium"
-                >
+                  className="text-green-100 font-medium">
                   Upload dan proses dokumen STNK dengan teknologi OCR
                 </Typography>
               </Box>
@@ -324,8 +322,7 @@ const STNKUpload = () => {
                 ref={fileInputRef}
                 onChange={handleImageUpload}
                 className="hidden"
-                id="stnk-upload"
-              />
+                id="stnk-upload"/>
               <label htmlFor="stnk-upload" className="cursor-pointer">
                 <Box className="flex flex-col items-center">
                   <Box className="bg-green-100 p-4 rounded-full mb-4">
@@ -368,8 +365,7 @@ const STNKUpload = () => {
                   fontWeight: 600,
                   px: 4,
                   py: 1.5,
-                }}
-              >
+                }}>
                 Ambil Foto
               </Button>
               <Button 
@@ -387,8 +383,7 @@ const STNKUpload = () => {
                   fontWeight: 600,
                   px: 4,
                   py: 1.5,
-                }}
-              >
+                }}>
                 Reset
               </Button>
             </Box>
@@ -414,8 +409,7 @@ const STNKUpload = () => {
                     bgcolor: '#166534',
                     color: 'white',
                     fontWeight: 600,
-                  }}
-                />
+                  }}/>
               </Box>
             </Box>
             <CardContent className="p-6">
@@ -435,8 +429,7 @@ const STNKUpload = () => {
                         '&:hover': {
                           transform: 'scale(1.02)',
                         }
-                      }}
-                    >
+                      }}>
                       <Box className="relative pt-[100%]">
                         <Avatar
                           variant="square"
@@ -451,8 +444,7 @@ const STNKUpload = () => {
                             borderRadius: '12px',
                             objectFit: 'contain',
                             bgcolor: '#f0f0f0'
-                          }}
-                        />
+                          }}/>
                       </Box>
                       <Box className="p-3 bg-white">
                         <Typography variant="subtitle2" className="font-semibold text-center">
@@ -473,8 +465,7 @@ const STNKUpload = () => {
         onClose={closeCamera}
         onCapture={handleTakePhoto}
         videoRef={videoRef}
-        canvasRef={canvasRef}
-      />
+        canvasRef={canvasRef}/>
 
       <ResultDialog
         open={resultDialog}
@@ -509,14 +500,12 @@ const STNKUpload = () => {
         selectedPTs={selectedPTs}
         setSelectedPTs={setSelectedPTs}
         selectedBrands={selectedBrands}
-        setSelectedBrands={setSelectedBrands}
-      />
+        setSelectedBrands={setSelectedBrands}/>
 
       <ZoomDialog
         open={zoomDialog}
         onClose={() => setZoomDialog(false)}
-        image={zoomedImage}
-      />
+        image={zoomedImage}/>
     </Box>
   );
 };

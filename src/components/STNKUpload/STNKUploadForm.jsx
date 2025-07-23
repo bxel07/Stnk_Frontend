@@ -22,8 +22,7 @@ const STNKUploadForm = ({
             ref={fileInputRef}
             onChange={handleImageUpload}
             className="hidden"
-            id="stnk-upload"
-          />
+            id="stnk-upload"/>
           <label htmlFor="stnk-upload" className="cursor-pointer">
             <i className="bi bi-images text-5xl mb-4 block text-gray-400"></i>
             <Typography variant="h6" className="mb-2 font-medium">
@@ -53,8 +52,7 @@ const STNKUploadForm = ({
           label="Kode Samsat"
           name="kode_samsat"
           value={kodeSamsat}
-          onChange={handleChange}
-        />
+          onChange={handleChange}/>
       </Grid>
       <Grid item>
         <TextField
@@ -63,8 +61,7 @@ const STNKUploadForm = ({
           name="jumlah"
           type="number"
           value={jumlah}
-          onChange={handleChange}
-        />
+          onChange={handleChange}/>
       </Grid>
 
       <Box className="mt-6 flex gap-3">
@@ -72,16 +69,14 @@ const STNKUploadForm = ({
           variant="contained"
           onClick={openCamera}
           startIcon={<i className="bi bi-camera"></i>}
-          disabled={isProcessing || selectedImages.length >= 10}
-        >
+          disabled={isProcessing || selectedImages.length >= 10}>
           Ambil Foto
         </Button>
         <Button
           variant="outlined"
           onClick={handleReset}
           disabled={isProcessing}
-          startIcon={<i className="bi bi-arrow-clockwise"></i>}
-        >
+          startIcon={<i className="bi bi-arrow-clockwise"></i>}>
           Reset
         </Button>
       </Box>

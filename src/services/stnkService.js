@@ -1,7 +1,5 @@
 import axios from "@/services/axiosInstance";
 
-
-
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const uploadStnk = (formData) =>
     axios.post("/upload-stnk/", formData, {
@@ -14,20 +12,20 @@ export const uploadStnk = (formData) =>
 // FUNGSI BARU UNTUK UPLOAD BATCH
 // ============================================================
 export const uploadStnkBatch = (formData) =>
-    axios.post("/upload-stnk-batch/", formData, {
+  axios.post("/upload-stnk-batch/", formData, {
         headers: {
             "Content-Type": "multipart/form-data",
         },
     });
     
-    export const saveStnkData = (data) => {
-      const token = localStorage.getItem("token");
-      return axios.post("/save-stnk-data/", data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    };
+export const saveStnkData = (data) => {
+  const token = localStorage.getItem("token");
+    return axios.post("/save-stnk-data/", data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  };
     
 export const getAllStnk = () => axios.get('/stnk-data/');
 export const getStnkById = (id) => axios.get(`/stnk/${id}`);

@@ -17,8 +17,7 @@ function LogoutButton() {
       onClick={handleLogout}
       variant="outlined"
       color="error"
-      sx={{ ml: 2 }}
-    >
+      sx={{ ml: 2 }}>
       Logout
     </Button>
   );

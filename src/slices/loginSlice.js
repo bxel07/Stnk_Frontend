@@ -8,7 +8,7 @@ export const loginUser = createAsyncThunk(
       const response = await login({ username, password });
       const { access_token, user } = response.data;
 
-      // localStorage.setItem("token", access_token);
+      // Simpan ke localStorage
       localStorage.setItem("access_token", access_token);
       localStorage.setItem("user", JSON.stringify(user));
 
@@ -18,7 +18,6 @@ export const loginUser = createAsyncThunk(
     }
   }
 );
-
 
 const loginSlice = createSlice({
   name: "auth",
@@ -61,6 +60,6 @@ const loginSlice = createSlice({
       });
   },
 });
-
 export const { logout, loadUserFromStorage } = loginSlice.actions;
+
 export default loginSlice.reducer;

@@ -54,7 +54,6 @@ import {
   Cancel,
   Warning
 } from "@mui/icons-material";
-import Swal from "sweetalert2";
 import ProtectedImage from "@/components/ProtectedImage";
 
 const BASE_URL = import.meta.env.VITE_API_URL + "/api" || "http://localhost:8000/api";
@@ -107,18 +106,6 @@ const STNKDataTable = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [filteredCorrectionData, setFilteredCorrectionData] = useState([]);
   const [dateFilterLoading, setDateFilterLoading] = useState(false);
-  
-  // const filteredInvalidData = invalidData.filter((item) => {
-  //   const matchesSearch = item.nomor_rangka
-  //     ?.toLowerCase()
-  //     .includes(searchText.toLowerCase());
-  
-  //   const matchesPT = !selectedPT || item.nama_pt === selectedPT;
-  //   const matchesBrand = !selectedBrand || item.nama_brand === selectedBrand;
-  
-  //   return matchesSearch && matchesPT && matchesBrand;
-  // });
-  
 
   // Image zoom state
   const [zoomImage, setZoomImage] = useState(null);
@@ -453,8 +440,7 @@ useEffect(() => {
                         color: 'white',
                         fontWeight: 600
                       }}
-                      onDelete={clearFilter}
-                    />
+                      onDelete={clearFilter}/>
                   </Box>
                 )}
                 {dateFilterLoading && (
@@ -472,13 +458,11 @@ useEffect(() => {
                     borderColor: '#166534',
                     backgroundColor: '#f0fdf4'
                   }
-                }}
-              >
+                }}>
                 {filterOpen ? 'Tutup' : 'Buka'} Filter
               </Button>
             </Box>
-          }
-        />
+          }/>
         <Collapse in={filterOpen}>
           <Divider />
           <CardContent className="p-6">
@@ -490,8 +474,7 @@ useEffect(() => {
                     value={dateFilter.filterType}
                     label="Filter Tanggal"
                     onChange={(e) => handleFilterTypeChange(e.target.value)}
-                    sx={{ borderRadius: 2 }}
-                  >
+                    sx={{ borderRadius: 2 }}>
                     <MenuItem value="all">Semua Data</MenuItem>
                     <MenuItem value="today">Hari Ini</MenuItem>
                     <MenuItem value="yesterday">Kemarin</MenuItem>
@@ -508,8 +491,7 @@ useEffect(() => {
                       value={ptFilter}
                       label="Filter PT"
                       onChange={(e) => setPTFilter(e.target.value)}
-                      sx={{ borderRadius: 2 }}
-                    >
+                      sx={{ borderRadius: 2 }}>
                       <MenuItem value="">Semua PT</MenuItem>
                       {uniquePT.map((pt, index) => (
                         <MenuItem key={index} value={pt}>
@@ -529,8 +511,7 @@ useEffect(() => {
                       value={brandFilter}
                       label="Filter Brand"
                       onChange={(e) => setBrandFilter(e.target.value)}
-                      sx={{ borderRadius: 2 }}
-                    >
+                      sx={{ borderRadius: 2 }}>
                       <MenuItem value="">Semua Brand</MenuItem>
                       {uniqueBrand.map((brand, index) => (
                         <MenuItem key={index} value={brand}>
@@ -558,8 +539,7 @@ useEffect(() => {
                     }}
                     InputLabelProps={{
                       shrink: true,
-                    }}
-                  />
+                    }}/>
                 </Grid>
               )}
 
@@ -571,8 +551,7 @@ useEffect(() => {
                       value={kodeSamsatFilter}
                       label="Filter Kode Samsat"
                       onChange={(e) => setKodeSamsatFilter(e.target.value)}
-                      sx={{ borderRadius: 2 }}
-                    >
+                      sx={{ borderRadius: 2 }}>
                       <MenuItem value="">Semua Kode Samsat</MenuItem>
                       {uniqueKodeSamsat.map((kode) => (
                         <MenuItem key={kode} value={kode}>
@@ -600,8 +579,7 @@ useEffect(() => {
                     }
                   }}
                   disabled={dateFilterLoading}
-                  fullWidth
-                >
+                  fullWidth>
                   Reset Filter
                 </Button>
               </Grid>
@@ -701,16 +679,14 @@ useEffect(() => {
                         key={row.id} 
                         hover 
                         className="cursor-pointer"
-                        sx={isInvalid ? { backgroundColor: '#fef2f2' } : {}}
-                      >
+                        sx={isInvalid ? { backgroundColor: '#fef2f2' } : {}}>
                         <TableCell>
                           {row.image_url ? (
                             <ProtectedImage
                               path={row.image_url}
                               alt="preview"
                               className="h-12 w-12 object-cover rounded-lg shadow cursor-zoom-in hover:opacity-80 transition-opacity"
-                              onClick={() => handleZoomImage(`${row.image_url}`)}
-                            />
+                              onClick={() => handleZoomImage(`${row.image_url}`)}/>
                           ) : (
                             <Box className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center">
                               <Typography variant="caption" className="text-gray-400">-</Typography>
@@ -745,8 +721,7 @@ useEffect(() => {
                                 bgcolor: '#dc2626',
                                 color: 'white',
                                 fontWeight: 600
-                              }}
-                            />
+                              }}/>
                           </TableCell>
                         )}
                         <TableCell>
@@ -760,8 +735,7 @@ useEffect(() => {
                                   '&:hover': { 
                                     backgroundColor: '#dbeafe' 
                                   }
-                                }}
-                              >
+                                }}>
                                 <Visibility fontSize="small" />
                               </IconButton>
                             </Tooltip>
@@ -774,8 +748,7 @@ useEffect(() => {
                                     '&:hover': { 
                                       backgroundColor: '#fef3c7' 
                                     }
-                                  }}
-                                >
+                                  }}>
                                   <Edit fontSize="small" />
                                 </IconButton>
                               </Tooltip>
@@ -815,24 +788,21 @@ useEffect(() => {
                 height: 3,
                 borderRadius: 2
               }
-            }}
-          >
+            }}>
             <Tab 
               label={
                 <Box className="flex items-center gap-2">
                   <TableChart />
                   Data STNK Regular
                 </Box>
-              } 
-            />
+              } />
             <Tab 
               label={
                 <Box className="flex items-center gap-2">
                   <Warning />
                   Data STNK Invalid
                 </Box>
-              } 
-            />
+              } />
           </Tabs>
         </Box>
       </Card>
@@ -864,14 +834,14 @@ useEffect(() => {
         "Belum ada data STNK"
       )}
 
-{activeTab === 1 && renderTable(
-  filteredInvalidData,// ← ini hasil filter
-  invalidLoading,
-  invalidError,
-  "Data STNK Invalid",
-  "Tidak ada data STNK yang invalid",
-  true
-)}
+      {activeTab === 1 && renderTable(
+        filteredInvalidData,// ← ini hasil filter
+        invalidLoading,
+        invalidError,
+        "Data STNK Invalid",
+        "Tidak ada data STNK yang invalid",
+        true
+      )}
 
 
       {/* Detail Dialog */}
@@ -882,8 +852,7 @@ useEffect(() => {
         fullWidth
         PaperProps={{
           className: "rounded-2xl"
-        }}
-      >
+        }}>
         <DialogTitle className="bg-gradient-to-r from-blue-50 to-blue-100 p-6">
           <Box className="flex items-center justify-between">
             <Box className="flex items-center gap-3">
@@ -906,8 +875,7 @@ useEffect(() => {
                 '&:hover': {
                   backgroundColor: '#f3f4f6'
                 }
-              }}
-            >
+              }}>
               <Close />
             </IconButton>
           </Box>
@@ -936,8 +904,7 @@ useEffect(() => {
                             transformOrigin: 'center center',
                             maxWidth: '100%',
                             height: 'auto'
-                          }}
-                        />
+                          }}/>
                       </div>
                     </Paper>
                   </Box>
@@ -1068,8 +1035,7 @@ useEffect(() => {
         fullWidth
         PaperProps={{
           className: "rounded-2xl"
-        }}
-      >
+        }}>
         <DialogTitle className="bg-gradient-to-r from-green-50 to-green-100 p-6">
           <Box className="flex justify-between items-center">
             <Box className="flex items-center gap-3">
@@ -1092,8 +1058,7 @@ useEffect(() => {
                 '&:hover': {
                   backgroundColor: '#f3f4f6'
                 }
-              }}
-            >
+              }}>
               <Close />
             </IconButton>
           </Box>
@@ -1112,13 +1077,11 @@ useEffect(() => {
                       transform: 'rotate(-90deg)',
                       transformOrigin: 'center',
                       minHeight: '400px'
-                    }}
-                  >
+                    }}>
                     <ProtectedImage
                       path={editRecord.image_url}
                       alt="Pratinjau"
-                      className="rounded-xl shadow max-w-full h-auto"
-                    />
+                      className="rounded-xl shadow max-w-full h-auto"/>
                   </div>
                 </Paper>
               </Box>
@@ -1141,8 +1104,7 @@ useEffect(() => {
                       borderRadius: 2,
                       backgroundColor: 'white'
                     }
-                  }}
-                />
+                  }}/>
 
                 <TextField
                   label="Jumlah (Rp)"
@@ -1165,8 +1127,7 @@ useEffect(() => {
                   }}
                   InputProps={{
                     inputProps: { min: 0 }
-                  }}
-                />
+                  }}/>
               </Box>
             </Box>
           )}
@@ -1174,10 +1135,7 @@ useEffect(() => {
         <Divider />
         <DialogActions className="p-6 bg-gray-50">
           <Box className="flex gap-3 w-full justify-end">
-            <Button 
-              onClick={handleCloseEditDialog} 
-              variant="outlined"
-              startIcon={<Cancel />}
+            <Button  onClick={handleCloseEditDialog} variant="outlined"startIcon={<Cancel />}
               sx={{
                 color: '#6b7280',
                 borderColor: '#d1d5db',
@@ -1189,14 +1147,10 @@ useEffect(() => {
                   borderColor: '#9ca3af',
                   backgroundColor: '#f9fafb'
                 }
-              }}
-            >
+              }}>
               Batal
             </Button>
-            <Button
-              onClick={handleEditSubmit}
-              variant="contained"
-              startIcon={<Save />}
+            <Button onClick={handleEditSubmit}variant="contained"startIcon={<Save />}
               sx={{
                 bgcolor: '#16a34a',
                 color: 'white',
@@ -1205,10 +1159,9 @@ useEffect(() => {
                 borderRadius: 2,
                 fontWeight: 600,
                 '&:hover': {
-                  bgcolor: '#16a34a'
+                bgcolor: '#16a34a'
                 }
-              }}
-            >
+              }}>
               Simpan
             </Button>
           </Box>
@@ -1216,15 +1169,10 @@ useEffect(() => {
       </Dialog>
 
       {/* Image Zoom Dialog */}
-      <Dialog 
-        open={!!zoomImage} 
-        onClose={handleCloseZoom} 
-        maxWidth="lg" 
-        fullWidth
+      <Dialog open={!!zoomImage} onClose={handleCloseZoom} maxWidth="lg" fullWidth
         PaperProps={{
           className: "rounded-2xl"
-        }}
-      >
+        }}>
         <DialogTitle className="bg-gradient-to-r from-gray-50 to-gray-100 p-6">
           <Box className="flex justify-between items-center">
             <Box className="flex items-center gap-3">
@@ -1240,15 +1188,13 @@ useEffect(() => {
                 </Typography>
               </Box>
             </Box>
-            <IconButton
-              onClick={handleCloseZoom}
+            <IconButton onClick={handleCloseZoom}
               sx={{
                 color: '#6b7280',
                 '&:hover': {
-                  backgroundColor: '#f3f4f6'
+                backgroundColor: '#f3f4f6'
                 }
-              }}
-            >
+              }}>
               <Close />
             </IconButton>
           </Box>
@@ -1257,12 +1203,7 @@ useEffect(() => {
         <DialogContent className="flex justify-center items-center p-6">
           {zoomImage && (
             <Paper elevation={3} className="p-2 rounded-2xl">
-              <ProtectedImage
-                path={zoomImage}
-                alt="Zoom"
-                className="max-h-[80vh] w-auto rounded-xl shadow-lg cursor-pointer"
-                onClick={handleCloseZoom}
-              />
+              <ProtectedImage path={zoomImage}alt="Zoom"className="max-h-[80vh] w-auto rounded-xl shadow-lg cursor-pointer"onClick={handleCloseZoom}/>
             </Paper>
           )}
         </DialogContent>
@@ -1276,8 +1217,7 @@ useEffect(() => {
         fullWidth
         PaperProps={{
           className: "rounded-2xl"
-        }}
-      >
+        }}>
         <DialogTitle className="bg-gradient-to-r from-green-50 to-green-100 p-6">
           <Box className="flex justify-between items-center">
             <Box className="flex items-center gap-3">
@@ -1293,15 +1233,13 @@ useEffect(() => {
                 </Typography>
               </Box>
             </Box>
-            <IconButton
-              onClick={() => setEditDialog(false)}
+            <IconButton onClick={() => setEditDialog(false)}
               sx={{
                 color: '#6b7280',
                 '&:hover': {
-                  backgroundColor: '#f3f4f6'
+                backgroundColor: '#f3f4f6'
                 }
-              }}
-            >
+              }}>
               <Close />
             </IconButton>
           </Box>
@@ -1310,29 +1248,21 @@ useEffect(() => {
         <DialogContent className="p-6">
           {selectedRecord && (
             <Box className="space-y-4">
-              <TextField
-                label="Nomor Rangka"
-                fullWidth
-                variant="outlined"
-                value={correctionForm.nomor_rangka}
+              <TextField label="Nomor Rangka"fullWidth variant="outlined"value={correctionForm.nomor_rangka}
                 onChange={(e) => handleCorrectionFormChange('nomor_rangka', e.target.value)}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
                     backgroundColor: 'white'
                   }
-                }}
-              />
+                }}/>
             </Box>
           )}
         </DialogContent>
         <Divider />
         <DialogActions className="p-6 bg-gray-50">
           <Box className="flex gap-3 w-full justify-end">
-            <Button
-              onClick={() => setEditDialog(false)}
-              variant="outlined"
-              startIcon={<Cancel />}
+            <Button onClick={() => setEditDialog(false)}variant="outlined"startIcon={<Cancel />}
               sx={{
                 color: '#6b7280',
                 borderColor: '#d1d5db',
@@ -1341,18 +1271,13 @@ useEffect(() => {
                 borderRadius: 2,
                 fontWeight: 600,
                 '&:hover': {
-                  borderColor: '#9ca3af',
-                  backgroundColor: '#f9fafb'
+                borderColor: '#9ca3af',
+                backgroundColor: '#f9fafb'
                 }
-              }}
-            >
+              }}>
               Batal
             </Button>
-            <Button
-              onClick={handleSaveCorrection}
-              variant="contained"
-              startIcon={<Save />}
-              disabled={savingCorrection}
+            <Button onClick={handleSaveCorrection} variant="contained" startIcon={<Save />}disabled={savingCorrection}
               sx={{
                 bgcolor: '#166534',
                 color: 'white',
@@ -1361,10 +1286,9 @@ useEffect(() => {
                 borderRadius: 2,
                 fontWeight: 600,
                 '&:hover': {
-                  bgcolor: '#14532d'
+                bgcolor: '#14532d'
                 }
-              }}
-            >
+              }}>
               {savingCorrection ? (
                 <Box className="flex items-center gap-2">
                   <CircularProgress size={16} color="inherit" />

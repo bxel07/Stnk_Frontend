@@ -9,11 +9,9 @@ import {
   getStnkListByDate,
   uploadStnkBatch,
   updateStnkInfo,
-
 } from "@/services/stnkService";
-
 import axios from "axios";
-const BASE_URL = import.meta.env.VITE_API_URL;
+
 
 
 // =============================================
@@ -21,6 +19,8 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 // =============================================
 
 // -- Fetch All STNK --
+const BASE_URL = import.meta.env.VITE_API_URL;
+
 export const fetchStnkList = createAsyncThunk(
   'stnk/fetchList',
   async (_, { rejectWithValue }) => {
@@ -166,7 +166,6 @@ const stnkSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-
       // === FETCH ===
       .addCase(fetchStnkList.pending, state => { state.loading = true; state.error = null; })
       .addCase(fetchStnkList.fulfilled, (state, action) => {
@@ -310,7 +309,6 @@ export const {
   clearError,
   clearLastBatchResult
 } = stnkSlice.actions;
-
 export default stnkSlice.reducer;
 
 // ==== Async Thunk untuk Login ====

@@ -118,8 +118,7 @@ function ProfilePage() {
               className="bg-white/20 hover:bg-white/30 text-white border-white/30 rounded-xl px-6 py-3"
               sx={{
                 backdropFilter: 'blur(10px)', textTransform: 'none', fontWeight: 600
-              }}
-            >
+              }}>
               Ubah Password
             </Button>
           </Box>
@@ -152,8 +151,7 @@ function ProfilePage() {
               <CardHeader
                 avatar={<Shield sx={{ color: '#166534', fontSize: 28 }} />}
                 title={<Typography variant="h6" className="font-bold text-gray-800">Informasi Akun</Typography>}
-                className="bg-green-50"
-              />
+                className="bg-green-50"/>
               <Divider />
               <CardContent className="space-y-4">
                 <ProfileInfoCard icon={<PhoneIphone />} label="No. Telepon" value={profile?.nomor_telepon || "-"} />
@@ -165,8 +163,7 @@ function ProfilePage() {
                     value={new Date(profile.created_at).toLocaleString("id-ID", {
                       year: "numeric", month: "long", day: "numeric",
                       hour: "2-digit", minute: "2-digit"
-                    })}
-                  />
+                    })}/>
                 )}
               </CardContent>
             </Card>
@@ -190,7 +187,7 @@ function ProfilePage() {
             <Box className="p-6">
               <Alert severity="info" className="mb-6 rounded-xl">
                 Saat ini hanya <strong>password</strong> yang bisa diperbarui untuk menjaga keamanan akun Anda.
-              </Alert>
+            </Alert>
 
               <Grid container spacing={3}>
                 <Grid item xs={12}>
@@ -202,8 +199,7 @@ function ProfilePage() {
                     setShow={setShowPassword}
                     icon={<Lock />}
                     error={password.length > 0 && password.length < 8}
-                    helper="Password minimal 8 karakter"
-                  />
+                    helper="Password minimal 8 karakter"/>
                 </Grid>
                 <Grid item xs={12}>
                   <PasswordField
@@ -214,8 +210,7 @@ function ProfilePage() {
                     setShow={setShowConfirmPassword}
                     icon={<Security />}
                     error={confirmPassword.length > 0 && confirmPassword !== password}
-                    helper="Password tidak cocok"
-                  />
+                    helper="Password tidak cocok"/>
                 </Grid>
               </Grid>
 
@@ -226,8 +221,7 @@ function ProfilePage() {
                 <Button
                   variant="contained" onClick={handleSave} disabled={saving}
                   className="bg-green-700 hover:bg-green-800 text-white"
-                  startIcon={saving ? <CircularProgress size={20} /> : <VpnKey />}
-                >
+                  startIcon={saving ? <CircularProgress size={20} /> : <VpnKey />}>
                   {saving ? "Menyimpan..." : "Simpan Perubahan"}
                 </Button>
               </Box>

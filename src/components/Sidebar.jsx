@@ -10,6 +10,9 @@ function Sidebar({ sidebarOpen }) {
     { label: "Dashboard", icon: "bi bi-grid-fill", link: "/dashboard", type: "Umum" },
     { label: "Upload", icon: "bi bi-cloud-upload-fill", link: "/upload-stnk", type: "STNK" },
     { label: "Data Table", icon: "bi bi-card-list", link: "/data-stnk", type: "STNK" },
+    
+    // Menu Master Data yang digabung
+   
   ];
 
   // Tambahkan menu admin jika role admin/superadmin
@@ -20,6 +23,12 @@ function Sidebar({ sidebarOpen }) {
         icon: "bi bi-people-fill",
         link: "/admin/users",
         type: "Umum",
+      },
+      {
+        label: "Master Data",
+        icon: "bi bi-database-fill",
+        link: "/master-data",
+        type: "Master Data" ,
       }
     );
   }
@@ -54,8 +63,7 @@ function Sidebar({ sidebarOpen }) {
                         isActive ? "bg-[#393E46] font-semibold" : ""
                       } ${sidebarOpen ? "justify-center" : ""}`
                     }
-                    title={sidebarOpen ? item.label : ""}
-                  >
+                    title={sidebarOpen ? item.label : ""}>
                     <i className={`${item.icon} text-lg`}></i>
                     {!sidebarOpen && (
                       <span className="flex-1 ms-3 whitespace-nowrap">
@@ -66,8 +74,7 @@ function Sidebar({ sidebarOpen }) {
                       <span
                         className={`inline-flex items-center justify-center px-2 ms-3 text-sm font-medium rounded-full ${
                           item.badgeColor || "bg-gray-100 text-gray-800"
-                        }`}
-                      >
+                        }`}>
                         {item.badge}
                       </span>
                     )}

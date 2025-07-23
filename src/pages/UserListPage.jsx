@@ -44,8 +44,8 @@ const UserListPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
 
-  const token = localStorage.getItem("access_token");
   const BASE_URL = import.meta.env.VITE_API_URL;
+  const token = localStorage.getItem("access_token");
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
   if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
@@ -100,35 +100,8 @@ const UserListPage = () => {
     setFilteredUsers(filtered);
   }, [users, searchQuery, roleFilter]);
 
-  const getBrandName = (brandIds) => {
-    if (!brandIds || brandList.length === 0) return "-";
   
-    const result = brandIds
-      .map((id) => {
-        const brand = brandList.find((b) => b.id === id);
-        return brand?.nama_brand;
-      })
-      .filter(Boolean)
-      .join(", ");
-  
-    return result || "-";
-  };
-  
-  const getPtName = (ptData) => {
-    if (!ptData || ptList.length === 0) return "-";
-  
-    const ids = Array.isArray(ptData) ? ptData : [ptData];
-    const result = ids
-      .map((id) => {
-        const pt = ptList.find((p) => p.id === parseInt(id));
-        if (!pt) console.warn("PT tidak ditemukan untuk ID:", id);
-        return pt?.nama_pt;
-      })
-      .filter(Boolean)
-      .join(", ");
-  
-    return result || "-";
-  };
+
 
   const getRoleIcon = (role) => {
     const iconColor = '#166534';
@@ -216,14 +189,12 @@ const UserListPage = () => {
                 <Typography 
                   variant="h5" 
                   component="h1" 
-                  className="text-white font-bold mb-1"
-                >
+                  className="text-white font-bold mb-1">
                   Manajemen Akun
                 </Typography>
                 <Typography 
                   variant="subtitle1" 
-                  className="text-green-100 font-medium"
-                >
+                  className="text-green-100 font-medium">
                   Kelola dan pantau akun pengguna sistem
                 </Typography>
               </Box>
@@ -291,8 +262,7 @@ const UserListPage = () => {
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: '#166534',
                       },
-                    }}
-                  >
+                    }}>
                     <MenuItem value="all">Semua Role</MenuItem>
                     {getUniqueRoles().map((r) => (
                       <MenuItem key={r} value={r}>
@@ -318,8 +288,7 @@ const UserListPage = () => {
                     },
                     height: '56px',
                     fontWeight: 600,
-                  }}
-                >
+                  }}>
                   Registrasi
                 </Button>
               </Grid>
@@ -345,8 +314,7 @@ const UserListPage = () => {
                   bgcolor: '#166534',
                   color: 'white',
                   fontWeight: 600,
-                }}
-              />
+                }}/>
             </Box>
           </Box>
           <CardContent className="p-6">
@@ -603,11 +571,8 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
   useEffect(() => {
     const fetchUserData = async () => {
       if (!userId || !open) return;
-      
       setLoading(true);
       try {
-        console.log("Fetching user data for ID:", userId);
-        
         const usersRes = await axios.get(`${BASE_URL}/users`, config);
         const userList = usersRes.data.data || [];
         const userData = userList.find((item) => item.id === userId);
@@ -616,8 +581,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
           setErrorMsg("User tidak ditemukan");
           return;
         }
-
-        console.log("User data found:", userData);
 
         // Process otorisasi data - struktur yang benar
         let otorisasiData = [];
@@ -667,11 +630,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
           const role = roles.find(r => r.id === parseInt(roleId));
           if (role) setSelectedRoleName(role.name);
         }
-
-        console.log("Form data set:", formData);
-        console.log("Selected role name:", userData.role);
-        console.log("Processed otorisasi:", otorisasiData);
-
       } catch (err) {
         console.error("Error fetching user:", err);
         setErrorMsg("Gagal memuat data user");
@@ -684,6 +642,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
     if (open && userId) {
       setTimeout(fetchUserData, 100);
     }
+
   }, [userId, open, roles]);
 
   // Reset form when modal closes
@@ -794,7 +753,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
             {errorMsg && (
               <Alert severity="error" className="rounded-xl">{errorMsg}</Alert>
             )}
-            
+
             <TextField 
               fullWidth 
               margin="normal" 
@@ -811,8 +770,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                 '& .MuiInputLabel-root.Mui-focused': {
                   color: '#166534',
                 },
-              }}
-            />
+              }}/>
             
             <TextField 
               fullWidth 
@@ -830,8 +788,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                 '& .MuiInputLabel-root.Mui-focused': {
                   color: '#166534',
                 },
-              }}
-            />
+              }}/>
             
             <FormControl fullWidth margin="normal">
               <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
@@ -846,8 +803,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                     borderColor: '#166534',
                   },
-                }}
-              >
+                }}>
                 {roles
                   .filter(r => {
                     if (currentUserRole === "admin") {
@@ -941,13 +897,11 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                           <Button
                             size="small"
                             onClick={handleClearSearch}
-                            sx={{ mt: 1, color: '#166534' }}
-                          >
+                            sx={{ mt: 1, color: '#166534' }}>
                             Hapus pencarian
                           </Button>
                         </Box>
                       )}
-
                       {/* Accordion for each wilayah_cakupan (filtered) */}
                       {Object.keys(groupedSamsat).sort().map((region) => {
                         const isFullySelected = isRegionFullySelected(region, i);
@@ -962,8 +916,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                                 bgcolor: isFullySelected ? "#f0f9ff" : isPartiallySelected ? "#fffbeb" : "#f9fafb",
                                 borderRadius: "8px",
                                 "&:hover": { bgcolor: "#f3f4f6" }
-                              }}
-                            >
+                              }}>
                               <Box className="flex items-center justify-between w-full mr-4">
                                 <Box className="flex items-center gap-2">
                                   <FormControlLabel
@@ -977,12 +930,10 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                                           color: "#166534",
                                           "&.Mui-checked": { color: "#166534" },
                                           "&.MuiCheckbox-indeterminate": { color: "#f59e0b" }
-                                        }}
-                                      />
-                                    }
+                                        }}/>
+                                      }
                                     label=""
-                                    sx={{ margin: 0 }}
-                                  />
+                                    sx={{ margin: 0 }}/>
                                   <Box>
                                     <Typography variant="subtitle2" className="font-semibold">
                                       {region}
@@ -1021,8 +972,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                                           sx={{
                                             color: "#166534",
                                             "&.Mui-checked": { color: "#166534" }
-                                          }}
-                                        />
+                                          }}/>
                                       }
                                       label={
                                         <Box>
@@ -1033,8 +983,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                                             #{samsat.kode_samsat}
                                           </Typography>
                                         </Box>
-                                      }
-                                    />
+                                      }/>
                                   </Grid>
                                 ))}
                               </Grid>
@@ -1042,7 +991,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                           </Accordion>
                         );
                       })}
-
                       {/* Selected Samsat Chips */}
                       {(otor.glbm_samsat_id || []).length > 0 && (
                         <Box className="mt-3">
@@ -1059,8 +1007,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                                     const newIds = (otor.glbm_samsat_id || []).filter(id => id !== samsatId);
                                     handleOtorisasiChange(i, "glbm_samsat_id", newIds);
                                   }}
-                                  sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}
-                                />
+                                  sx={{ bgcolor: "#166534", color: "white", fontSize: "0.75rem" }}/>
                               ) : null;
                             })}
                           </Box>
@@ -1084,8 +1031,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                               borderColor: '#166534',
                             },
-                          }}
-                        >
+                          }}>
                           {ptList.map(pt => (
                             <MenuItem key={pt.id} value={pt.id}>
                               {pt.nama_pt}
@@ -1111,8 +1057,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                               borderColor: '#166534',
                             },
-                          }}
-                        >
+                          }}>
                           {brandList.map(b => (
                             <MenuItem key={b.id} value={b.id}>
                               {b.nama_brand}
@@ -1140,8 +1085,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
               borderColor: '#4b5563',
               bgcolor: '#f9fafb',
             },
-          }}
-        >
+          }}>
           Batal
         </Button>
         <Button 
@@ -1154,8 +1098,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
               bgcolor: '#0f5132',
             },
             fontWeight: 600,
-          }}
-        >
+          }}>
           Simpan
         </Button>
       </DialogActions>

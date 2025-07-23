@@ -57,12 +57,10 @@ const ResultDialog = ({
               key={idx}
               expanded={expandedPanels.has(idx)}
               onChange={handleAccordionChange(idx)}
-              className="border-b"
-            >
+              className="border-b">
               <AccordionSummary
                 expandIcon={<i className="bi bi-chevron-down"></i>}
-                className="bg-gray-50"
-              >
+                className="bg-gray-50">
                 <Box className="flex items-center justify-between w-full mr-4">
                   <Box className="flex items-center gap-3">
                     <Typography variant="subtitle1" className="font-medium">
@@ -85,8 +83,7 @@ const ResultDialog = ({
                       }
                       size="small"
                       variant="outlined"
-                      className="text-xs"
-                    />
+                      className="text-xs"/>
                   </Box>
                 </Box>
               </AccordionSummary>
@@ -100,8 +97,7 @@ const ResultDialog = ({
                    <img
                       src={imagePreviews[idx]}
                       alt={`STNK Preview ${idx + 1}`}
-                      style={{ transform: 'rotate(-90deg)', width: '100%', display: 'block' }}
-                    />
+                      style={{ transform: 'rotate(-90deg)', width: '100%', display: 'block' }}/>
                   </Grid>
 
                   {/* Data STNK */}
@@ -119,8 +115,7 @@ const ResultDialog = ({
                             setCorrectedNumbers(updated);
                           }}
                           error={!correctedNumbers[idx]?.trim()}
-                          helperText={!correctedNumbers[idx]?.trim() ? "Nomor rangka wajib diisi" : ""}
-                        />
+                          helperText={!correctedNumbers[idx]?.trim() ? "Nomor rangka wajib diisi" : ""}/>
                       </Grid>
 
                       <Grid item xs={12} sm={6}>
@@ -135,8 +130,7 @@ const ResultDialog = ({
                             updated[idx] = e.target.value;
                             setCorrectedQuantities(updated);
                           }}
-                          inputProps={{ min: 0 }}
-                        />
+                          inputProps={{ min: 0 }}/>
                       </Grid>
 
                       {/* Bagian Kode Samsat, PT, Brand telah dihapus dari tampilan */}
@@ -163,8 +157,7 @@ const ResultDialog = ({
               onClick={handleSubmit}
               disabled={isSubmitting || correctedNumbers.some((n) => !n?.trim())}
               startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <i className="bi bi-check-lg"></i>}
-              className="bg-green-600 hover:bg-green-700"
-            >
+              className="bg-green-600 hover:bg-green-700">
               {isSubmitting ? "Menyimpan..." : "Simpan Semua"}
             </Button>
           </Box>

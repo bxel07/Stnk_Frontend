@@ -107,8 +107,7 @@ function LoginPage() {
                       color: '#dc2626',
                       border: '1px solid #fecaca',
                       '& .MuiAlert-icon': { color: '#dc2626' }
-                    }}
-                  >
+                    }}>
                     {errorMsg}
                   </Alert>
                 )}
@@ -137,8 +136,7 @@ function LoginPage() {
                       padding: '14px 0', fontSize: 16, fontWeight: 600,
                       textTransform: 'none', borderRadius: '12px',
                       boxShadow: '0 4px 12px rgba(22, 101, 52, 0.2)', transition: 'all 0.3s ease'
-                    }}
-                  >
+                    }}>
                     <Box className="flex items-center gap-2">
                       {loading ? (
                         <>

@@ -20,6 +20,7 @@ import "react-toastify/dist/ReactToastify.css";
 import UserListPage from "@/pages/UserListPage";
 import ProfilePage from "@/pages/ProfilePage";
 import RegisterUserModal from "./components/RegisterUserModal.jsx";
+import MasterDataPage from "@/pages/MasterDataPage";
 
 
 
@@ -44,13 +45,10 @@ createRoot(document.getElementById("root")).render(
             />
             <Route
               path="/admin/register"
-              element={<ProtectedRoute allowedRoles={["admin", "superadmin"]}>
-                <RegisterUserModal />
-              </ProtectedRoute>}
-            />
+              element={<ProtectedRoute allowedRoles={["admin", "superadmin"]}><RegisterUserModal /></ProtectedRoute>}/>
             <Route path="/admin/users" element={<ProtectedRoute><UserListPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-
+            <Route path="/master-data" element={<ProtectedRoute><MasterDataPage /></ProtectedRoute>} />
           </Route>
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />
