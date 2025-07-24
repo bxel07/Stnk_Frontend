@@ -15,7 +15,7 @@ import { useSelector } from "react-redux";
 import { useEffect } from "react";
 
 function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [nomorTelepon, setNomorTelepon] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,9 @@ function LoginPage() {
     setErrorMsg("");
     setLoading(true);
     try {
-      const { token, user } = await dispatch(loginUser({ username, password })).unwrap();
+      const { token, user } = await dispatch(
+        loginUser({ nomor_telepon: nomorTelepon, password })
+      ).unwrap();      
       dispatch(setCredentials({ token, user }));
       Swal.fire({
         title: "Login Berhasil",
@@ -112,11 +114,15 @@ function LoginPage() {
                   </Alert>
                 )}
                 <Box component="form" onSubmit={handleLogin} className="space-y-4 mb-4">
-                  <TextField
-                    fullWidth label="Username" required value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    variant="outlined" sx={{ ...inputStyle, mb: 2 }}
-                  />
+                <TextField
+                  fullWidth
+                  label="Nomor Telepon"
+                  required
+                  value={nomorTelepon}
+                  onChange={(e) => setNomorTelepon(e.target.value)}
+                  variant="outlined"
+                  sx={{ ...inputStyle, mb: 2 }}
+                />
                   <TextField
                     fullWidth label="Password" type="password" required value={password}
                     onChange={(e) => setPassword(e.target.value)}

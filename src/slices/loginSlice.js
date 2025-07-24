@@ -3,18 +3,18 @@ import { login } from "@/services/stnkService";
 
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
-  async ({ username, password }, { rejectWithValue }) => {
+  async ({ nomor_telepon, password }, { rejectWithValue }) => {
     try {
-      const response = await login({ username, password });
+      const response = await login({ nomor_telepon, password });
       const { access_token, user } = response.data;
 
       // Simpan ke localStorage
       localStorage.setItem("access_token", access_token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      return { token: access_token, user }; // 🔥 FIXED
+      return { token: access_token, user };
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Login gagal.");
+      return rejectWithValue(err.response?.data?.detail || "Login gagal.");
     }
   }
 );
@@ -31,12 +31,12 @@ const loginSlice = createSlice({
     logout(state) {
       state.user = null;
       state.token = null;
-      localStorage.removeItem("token");
+      localStorage.removeItem("access_token");
       localStorage.removeItem("user");
     },
     loadUserFromStorage(state) {
       const user = localStorage.getItem("user");
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       if (user && token) {
         state.user = JSON.parse(user);
         state.token = token;
@@ -60,6 +60,7 @@ const loginSlice = createSlice({
       });
   },
 });
+
 export const { logout, loadUserFromStorage } = loginSlice.actions;
 
 export default loginSlice.reducer;

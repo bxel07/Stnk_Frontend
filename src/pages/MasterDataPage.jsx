@@ -806,7 +806,7 @@ const MasterDataPage = () => {
                 )}
                 
                 {/* Button khusus untuk tab wilayah */}
-                {activeTab === 3 && (
+                
                     <Button
                     onClick={handleAddNew}
                     variant="contained"
@@ -824,7 +824,6 @@ const MasterDataPage = () => {
                     }}>
                     Tambah Data
                   </Button>
-                )}
                 {activeTab === 3 && (
                   <Button
                     onClick={() => {

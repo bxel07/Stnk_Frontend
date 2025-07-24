@@ -42,9 +42,11 @@ export const getStnkListByDate = (date) => axios.get(`/stnk-data/by-created-date
 // Update nomor rangka dan jumlah langsung ke STNKData
 export const updateStnkInfo = (id, data) =>
   axios.put(`/stnk-data/${id}/update-info/`, data);
-  export const login = ({ username, password }) => {
+
+export const login = ({ nomor_telepon, password }) => {
     return axios.post(`${API_BASE_URL}/login`, {
-      username,
+      nomor_telepon,
       password,
     });
   };
+  
