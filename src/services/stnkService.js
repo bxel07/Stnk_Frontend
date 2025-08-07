@@ -43,9 +43,9 @@ export const getStnkListByDate = (date) => axios.get(`/stnk-data/by-created-date
 export const updateStnkInfo = (id, data) =>
   axios.put(`/stnk-data/${id}/update-info/`, data);
 
-export const login = ({ nomor_telepon, password }) => {
+export const login = ({ username, password }) => {
     return axios.post(`${API_BASE_URL}/login`, {
-      nomor_telepon,
+      username,
       password,
     });
   };

@@ -793,14 +793,14 @@ useEffect(() => {
               label={
                 <Box className="flex items-center gap-2">
                   <TableChart />
-                  Data STNK Regular
+                  Data STNK Sukses
                 </Box>
               } />
             <Tab 
               label={
                 <Box className="flex items-center gap-2">
                   <Warning />
-                  Data STNK Invalid
+                  Data STNK Gagal
                 </Box>
               } />
           </Tabs>
@@ -830,7 +830,7 @@ useEffect(() => {
         filteredData,
         loading,
         error,
-        "Data STNK Regular",
+        "Data STNK Sukses",
         "Belum ada data STNK"
       )}
 
@@ -838,8 +838,8 @@ useEffect(() => {
         filteredInvalidData,// ← ini hasil filter
         invalidLoading,
         invalidError,
-        "Data STNK Invalid",
-        "Tidak ada data STNK yang invalid",
+        "Data STNK Gagal",
+        "Tidak ada data STNK yang gagal",
         true
       )}
 

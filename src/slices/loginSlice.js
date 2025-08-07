@@ -3,9 +3,9 @@ import { login } from "@/services/stnkService";
 
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
-  async ({ nomor_telepon, password }, { rejectWithValue }) => {
+  async ({ username, password }, { rejectWithValue }) => {
     try {
-      const response = await login({ nomor_telepon, password });
+      const response = await login({ username, password });
       const { access_token, user } = response.data;
 
       // Simpan ke localStorage

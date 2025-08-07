@@ -15,7 +15,7 @@ import { useSelector } from "react-redux";
 import { useEffect } from "react";
 
 function LoginPage() {
-  const [nomorTelepon, setNomorTelepon] = useState("");
+  const [username, setNomorTelepon] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ function LoginPage() {
     setLoading(true);
     try {
       const { token, user } = await dispatch(
-        loginUser({ nomor_telepon: nomorTelepon, password })
+        loginUser({ username: username, password })
       ).unwrap();      
       dispatch(setCredentials({ token, user }));
       Swal.fire({
@@ -118,7 +118,7 @@ function LoginPage() {
                   fullWidth
                   label="Nomor Telepon"
                   required
-                  value={nomorTelepon}
+                  value={username}
                   onChange={(e) => setNomorTelepon(e.target.value)}
                   variant="outlined"
                   sx={{ ...inputStyle, mb: 2 }}

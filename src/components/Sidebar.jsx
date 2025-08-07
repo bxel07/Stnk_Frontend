@@ -9,7 +9,7 @@ function Sidebar({ sidebarOpen }) {
     { label: "Profil Saya", icon: "bi bi-person-circle", link: "/profile", type: "Umum" },
     { label: "Dashboard", icon: "bi bi-grid-fill", link: "/dashboard", type: "Umum" },
     { label: "Upload", icon: "bi bi-cloud-upload-fill", link: "/upload-stnk", type: "STNK" },
-    { label: "Data Table", icon: "bi bi-card-list", link: "/data-stnk", type: "STNK" },
+    { label: "Hasil Scan STNK", icon: "bi bi-card-list", link: "/data-stnk", type: "STNK" },
     
     // Menu Master Data yang digabung
    

@@ -86,7 +86,7 @@ function Dashboard() {
         return 'Mengelola data dan pengaturan administratif';
       case 'cao':
         return 'Mengawasi operasional dan administrasi';
-      case 'orlap':
+      case 'user':
         return 'Operator lapangan untuk input data STNK';
       default:
         return 'Pengguna sistem STNK Reader';
@@ -189,7 +189,7 @@ function Dashboard() {
                 </Box>
                 
                 <Typography variant="h6" className="text-green-700 font-semibold mb-2">
-                  {user.name || user.userName}
+                  {user.name || user.userName || user.username}
                 </Typography>
                 
                 <Box className="flex items-center gap-3 flex-wrap">
