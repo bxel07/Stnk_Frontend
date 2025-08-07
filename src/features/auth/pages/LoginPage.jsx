@@ -116,7 +116,7 @@ function LoginPage() {
                 <Box component="form" onSubmit={handleLogin} className="space-y-4 mb-4">
                 <TextField
                   fullWidth
-                  label="Nomor Telepon"
+                  label="Username"
                   required
                   value={username}
                   onChange={(e) => setNomorTelepon(e.target.value)}
