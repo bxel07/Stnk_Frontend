@@ -171,7 +171,7 @@ const RegisterUserModal = ({ open, onClose, onSuccess }) => {
       axios.get(`${baseUrl}/roles`, config),
       axios.get(`${baseUrl}/glbm-pt`, config),
       axios.get(`${baseUrl}/glbm-brand`, config),
-      axios.get(`${baseUrl}/glbm-samsat`, config),
+      axios.get(`${baseUrl}/glbm-samsat/`, config),
     ])
       .then(([rolesRes, ptRes, brandRes, samsatRes]) => {
         setRoles(rolesRes.data || []);

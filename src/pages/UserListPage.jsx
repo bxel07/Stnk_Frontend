@@ -532,7 +532,7 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
         const [ptRes, brandRes, samsatRes] = await Promise.all([
           axios.get(`${BASE_URL}/glbm-pt`, config),
           axios.get(`${BASE_URL}/glbm-brand`, config),
-          axios.get(`${BASE_URL}/glbm-samsat`, config),
+          axios.get(`${BASE_URL}/glbm-samsat/`, config),
         ]);
 
         const ptData = ptRes.data.data || [];
