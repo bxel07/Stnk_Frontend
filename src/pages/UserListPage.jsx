@@ -9,7 +9,8 @@ import {
   CardHeader, Divider, Chip, TextField, FormControl, InputLabel,
   Select, MenuItem, Grid, Button, Dialog, DialogTitle, DialogContent,
   DialogActions, IconButton, Fade, Slide, Accordion, AccordionSummary,
-  AccordionDetails, FormControlLabel, Checkbox, InputAdornment
+  AccordionDetails, FormControlLabel, Checkbox, InputAdornment,
+  useMediaQuery, useTheme, Stack
 } from "@mui/material";
 import { 
   Add, 
@@ -26,11 +27,17 @@ import {
   Security,
   LocationOn,
   ExpandMore,
-  Clear
+  Clear,
+  Email,
+  Badge
 } from "@mui/icons-material";
 import RegisterUserModal from "@/components/RegisterUserModal";
 
 const UserListPage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const user = useSelector((state) => state.auth.user);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -38,8 +45,7 @@ const UserListPage = () => {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [ptList, setPtList] = useState([]);
-  const [brandList, setBrandList] = useState([]);
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
@@ -67,19 +73,6 @@ const UserListPage = () => {
 
   useEffect(() => {
     fetchUsers();
-    const fetchPTAndBrand = async () => {
-      try {
-        const [ptRes, brandRes] = await Promise.all([
-          axios.get(`${BASE_URL}/glbm-pt`, config),
-          axios.get(`${BASE_URL}/glbm-brand`, config),
-        ]);
-        setPtList(ptRes.data.data || []);
-        setBrandList(brandRes.data.data || []);
-      } catch (err) {
-        console.error("Gagal fetch PT/Brand:", err);
-      }
-    };
-    fetchPTAndBrand();
   }, []);
 
   useEffect(() => {
@@ -100,12 +93,9 @@ const UserListPage = () => {
     setFilteredUsers(filtered);
   }, [users, searchQuery, roleFilter]);
 
-  
-
-
   const getRoleIcon = (role) => {
     const iconColor = '#166534';
-    const iconSize = 20;
+    const iconSize = isMobile ? 16 : 20;
     
     switch (role?.toLowerCase()) {
       case 'superadmin':
@@ -160,6 +150,82 @@ const UserListPage = () => {
     return [...new Set(users.map(user => user.role?.role || user.role).filter(Boolean))];
   };
 
+  // Mobile Card Component for User List
+  const MobileUserCard = ({ user, index }) => (
+    <Card 
+      key={user.id}
+      className="mb-4 shadow-md rounded-xl"
+      sx={{ 
+        '&:hover': { 
+          boxShadow: 3,
+          transition: 'box-shadow 0.2s'
+        } 
+      }}
+    >
+      <CardContent className="p-4">
+        <Box className="flex justify-between items-start mb-3">
+          <Box className="flex items-center gap-2">
+            <Chip 
+              label={`#${index + 1}`}
+              size="small"
+              sx={{ 
+                bgcolor: '#f0fdf4',
+                color: '#166534',
+                fontWeight: 600,
+                fontSize: '0.75rem'
+              }}
+            />
+            <Box className="flex items-center gap-1">
+              {getRoleIcon(user.role?.role || user.role)}
+              <Chip
+                label={user.role?.role || user.role}
+                color={getRoleColor(user.role?.role || user.role)}
+                size="small"
+                sx={{ fontWeight: 600, fontSize: '0.75rem' }}
+              />
+            </Box>
+          </Box>
+          <Button 
+            onClick={() => handleOpenModal(user)} 
+            size="small" 
+            variant="outlined"
+            startIcon={<Edit sx={{ fontSize: 16 }} />}
+            sx={{
+              borderColor: '#166534',
+              color: '#166534',
+              '&:hover': {
+                borderColor: '#0f5132',
+                bgcolor: '#f0fdf4',
+              },
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              minWidth: 'auto',
+              px: 1.5,
+            }}
+          >
+            {isSmall ? '' : 'Edit'}
+          </Button>
+        </Box>
+        
+        <Box className="space-y-2">
+          <Box className="flex items-center gap-2">
+            <Person sx={{ color: '#166534', fontSize: 18 }} />
+            <Typography variant="body2" className="font-semibold text-gray-800">
+              {user.username}
+            </Typography>
+          </Box>
+          
+          <Box className="flex items-center gap-2">
+            <Email sx={{ color: '#166534', fontSize: 18 }} />
+            <Typography variant="body2" className="text-gray-600 break-all">
+              {user.email || user.gmail}
+            </Typography>
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+
   if (loading) {
     return (
       <Box className="flex justify-center items-center py-16">
@@ -176,32 +242,34 @@ const UserListPage = () => {
   }
 
   return (
-    <Box className="space-y-6">
+    <Box className="space-y-4 md:space-y-6" sx={{ px: { xs: 1, sm: 2, md: 0 } }}>
       {/* Header Section */}
       <Fade in={true} timeout={800}>
         <Card className="shadow-lg rounded-2xl overflow-hidden">
-          <Box className="bg-gradient-to-r from-green-700 to-green-800 p-6">
-            <Box className="flex items-center gap-4">
-              <Box className="bg-white/10 p-3 rounded-full backdrop-blur-sm">
-                <AccountCircle sx={{ color: 'white', fontSize: 35 }} />
+          <Box className="bg-gradient-to-r from-green-700 to-green-800 p-4 md:p-6">
+            <Box className="flex items-center gap-3 md:gap-4">
+              <Box className="bg-white/10 p-2 md:p-3 rounded-full backdrop-blur-sm">
+                <AccountCircle sx={{ color: 'white', fontSize: { xs: 28, md: 35 } }} />
               </Box>
               <Box className="flex-1">
                 <Typography 
-                  variant="h5" 
+                  variant={isMobile ? "h6" : "h5"}
                   component="h1" 
                   className="text-white font-bold mb-1">
                   Manajemen Akun
                 </Typography>
                 <Typography 
-                  variant="subtitle1" 
+                  variant={isMobile ? "body2" : "subtitle1"}
                   className="text-green-100 font-medium">
                   Kelola dan pantau akun pengguna sistem
                 </Typography>
               </Box>
-              <Box className="hidden md:flex items-center gap-2">
-                <Group sx={{ color: 'white', fontSize: 32 }} />
-                <Security sx={{ color: 'white', fontSize: 32 }} />
-              </Box>
+              {!isSmall && (
+                <Box className="hidden sm:flex items-center gap-2">
+                  <Group sx={{ color: 'white', fontSize: { sm: 24, md: 32 } }} />
+                  <Security sx={{ color: 'white', fontSize: { sm: 24, md: 32 } }} />
+                </Box>
+              )}
             </Box>
           </Box>
         </Card>
@@ -218,46 +286,52 @@ const UserListPage = () => {
       {/* Filter Section */}
       <Slide direction="up" in={true} timeout={600}>
         <Card className="shadow-lg rounded-2xl">
-          <Box className="bg-green-50 p-4 border-b border-green-200">
+          <Box className="bg-green-50 p-3 md:p-4 border-b border-green-200">
             <Box className="flex items-center gap-2">
-              <FilterList sx={{ color: '#166534', fontSize: 24 }} />
-              <Typography variant="h6" className="font-bold text-gray-800">
+              <FilterList sx={{ color: '#166534', fontSize: { xs: 20, md: 24 } }} />
+              <Typography variant={isMobile ? "subtitle1" : "h6"} className="font-bold text-gray-800">
                 Filter & Pencarian
               </Typography>
             </Box>
           </Box>
-          <CardContent className="p-6">
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <TextField 
-                  fullWidth 
-                  label="Cari Akun" 
-                  value={searchQuery} 
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: <Search sx={{ color: '#166534', mr: 1 }} />
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#166534',
-                      },
+          <CardContent className="p-4 md:p-6">
+            <Stack spacing={2}>
+              {/* Search Field */}
+              <TextField 
+                fullWidth 
+                label="Cari Akun" 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)}
+                size={isMobile ? "small" : "medium"}
+                InputProps={{
+                  startAdornment: <Search sx={{ color: '#166534', mr: 1, fontSize: { xs: 20, md: 24 } }} />
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#166534',
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#166534',
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel sx={{ '&.Mui-focused': { color: '#166534' } }}>
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#166534',
+                  },
+                }}
+              />
+              
+              {/* Filter and Button Row */}
+              <Box className="flex gap-2">
+                <FormControl fullWidth sx={{ flex: 1 }}>
+                  <InputLabel 
+                    sx={{ '&.Mui-focused': { color: '#166534' } }}
+                    size={isMobile ? "small" : "normal"}
+                  >
                     Filter Role
                   </InputLabel>
                   <Select 
                     value={roleFilter} 
                     onChange={(e) => setRoleFilter(e.target.value)}
                     label="Filter Role"
+                    size={isMobile ? "small" : "medium"}
                     sx={{
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: '#166534',
@@ -268,132 +342,156 @@ const UserListPage = () => {
                       <MenuItem key={r} value={r}>
                         <Box className="flex items-center gap-2">
                           {getRoleIcon(r)}
-                          {r}
+                          <Typography variant={isMobile ? "body2" : "body1"}>
+                            {r}
+                          </Typography>
                         </Box>
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} md={2}>
+                
                 <Button 
-                  fullWidth
                   variant="contained"
-                  startIcon={<Add />}
+                  startIcon={<Add sx={{ fontSize: { xs: 18, md: 24 } }} />}
                   onClick={() => setRegisterModalOpen(true)}
+                  size={isMobile ? "small" : "medium"}
                   sx={{
                     bgcolor: '#166534',
                     '&:hover': {
                       bgcolor: '#0f5132',
                     },
-                    height: '56px',
                     fontWeight: 600,
+                    minWidth: { xs: 'auto', sm: '120px' },
+                    px: { xs: 1.5, sm: 2 },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   }}>
-                  Registrasi
+                  {isSmall ? 'Add' : 'Registrasi'}
                 </Button>
-              </Grid>
-            </Grid>
+              </Box>
+            </Stack>
           </CardContent>
         </Card>
       </Slide>
 
-      {/* Table Section */}
+      {/* Table/Card Section */}
       <Fade in={true} timeout={1000}>
         <Card className="shadow-lg rounded-2xl">
-          <Box className="bg-green-50 p-4 border-b border-green-200">
+          <Box className="bg-green-50 p-3 md:p-4 border-b border-green-200">
             <Box className="flex items-center justify-between">
               <Box className="flex items-center gap-2">
-                <Group sx={{ color: '#166534', fontSize: 24 }} />
-                <Typography variant="h6" className="font-bold text-gray-800">
+                <Group sx={{ color: '#166534', fontSize: { xs: 20, md: 24 } }} />
+                <Typography variant={isMobile ? "subtitle1" : "h6"} className="font-bold text-gray-800">
                   Daftar Akun ({filteredUsers.length})
                 </Typography>
               </Box>
               <Chip 
-                label={`Total: ${filteredUsers.length} akun`}
+                label={`${filteredUsers.length}`}
+                size={isMobile ? "small" : "medium"}
                 sx={{ 
                   bgcolor: '#166534',
                   color: 'white',
                   fontWeight: 600,
+                  fontSize: { xs: '0.75rem', md: '0.875rem' },
                 }}/>
             </Box>
           </Box>
-          <CardContent className="p-6">
-            <TableContainer component={Paper} className="rounded-xl shadow-sm">
-              <Table stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>No</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Username</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Email</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Role</TableCell>
-                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Aksi</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredUsers.map((u, i) => {
-                    const brandIds = Array.isArray(u.otorisasi)
-                    ? u.otorisasi.map((o) => o.brand_id)
-                    : [];
-                  
-                  const ptIds = Array.isArray(u.otorisasi)
-                    ? u.otorisasi.map((o) => o.pt_id)
-                    : [];                  
-                    return (
-                      <TableRow 
-                        key={u.id}
-                        sx={{ 
-                          '&:hover': { 
-                            bgcolor: '#f8fafc',
-                            transition: 'background-color 0.2s'
-                          } 
-                        }}
-                      >
-                        <TableCell>{i + 1}</TableCell>
-                        <TableCell>
-                          <Box className="flex items-center gap-2">
-                            <Person sx={{ color: '#166534', fontSize: 18 }} />
-                            <Typography variant="body2" className="font-medium">
-                              {u.username}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>{u.email || u.gmail}</TableCell>
-                        <TableCell>
-                          <Box className="flex items-center gap-2">
-                            {getRoleIcon(u.role?.role || u.role)}
-                            <Chip
-                              label={u.role?.role || u.role}
-                              color={getRoleColor(u.role?.role || u.role)}
-                              size="small"
-                              sx={{ fontWeight: 600 }}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            onClick={() => handleOpenModal(u)} 
-                            size="small" 
-                            variant="outlined"
-                            startIcon={<Edit />}
-                            sx={{
-                              borderColor: '#166534',
-                              color: '#166534',
-                              '&:hover': {
-                                borderColor: '#0f5132',
-                                bgcolor: '#f0fdf4',
-                              },
-                              fontWeight: 600,
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+          <CardContent className="p-3 md:p-6">
+            {isMobile ? (
+              // Mobile Card Layout
+              <Box>
+                {filteredUsers.length === 0 ? (
+                  <Box className="text-center py-8">
+                    <Person sx={{ fontSize: 48, color: '#9ca3af', mb: 2 }} />
+                    <Typography variant="body1" className="text-gray-500">
+                      Tidak ada akun ditemukan
+                    </Typography>
+                  </Box>
+                ) : (
+                  filteredUsers.map((user, index) => (
+                    <MobileUserCard key={user.id} user={user} index={index} />
+                  ))
+                )}
+              </Box>
+            ) : (
+              // Desktop Table Layout
+              <TableContainer component={Paper} className="rounded-xl shadow-sm">
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>No</TableCell>
+                      <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Username</TableCell>
+                      <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Role</TableCell>
+                      <TableCell sx={{ fontWeight: 600, bgcolor: '#f8fafc' }}>Aksi</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredUsers.map((u, i) => {
+                      const brandIds = Array.isArray(u.otorisasi)
+                      ? u.otorisasi.map((o) => o.brand_id)
+                      : [];
+                    
+                    const ptIds = Array.isArray(u.otorisasi)
+                      ? u.otorisasi.map((o) => o.pt_id)
+                      : [];                  
+                      return (
+                        <TableRow 
+                          key={u.id}
+                          sx={{ 
+                            '&:hover': { 
+                              bgcolor: '#f8fafc',
+                              transition: 'background-color 0.2s'
+                            } 
+                          }}
+                        >
+                          <TableCell>{i + 1}</TableCell>
+                          <TableCell>
+                            <Box className="flex items-center gap-2">
+                              <Person sx={{ color: '#166534', fontSize: 18 }} />
+                              <Typography variant="body2" className="font-medium">
+                                {u.username}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>{u.email || u.gmail}</TableCell>
+                          <TableCell>
+                            <Box className="flex items-center gap-2">
+                              {getRoleIcon(u.role?.role || u.role)}
+                              <Chip
+                                label={u.role?.role || u.role}
+                                color={getRoleColor(u.role?.role || u.role)}
+                                size="small"
+                                sx={{ fontWeight: 600 }}
+                              />
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              onClick={() => handleOpenModal(u)} 
+                              size="small" 
+                              variant="outlined"
+                              startIcon={<Edit />}
+                              sx={{
+                                borderColor: '#166534',
+                                color: '#166534',
+                                '&:hover': {
+                                  borderColor: '#0f5132',
+                                  bgcolor: '#f0fdf4',
+                                },
+                                fontWeight: 600,
+                              }}
+                            >
+                              Edit
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </CardContent>
         </Card>
       </Fade>
@@ -432,7 +530,6 @@ const UserListPage = () => {
     </Box>
   );
 };
-
 const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
   const BASE_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("access_token");
@@ -527,7 +624,6 @@ const EditUserModal = ({ open, onClose, userId, onSaved, currentUserRole }) => {
       if (!open) return;
       
       try {
-        console.log("Fetching master data...");
         
         const [ptRes, brandRes, samsatRes] = await Promise.all([
           axios.get(`${BASE_URL}/glbm-pt`, config),
