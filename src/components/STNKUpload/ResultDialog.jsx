@@ -66,7 +66,7 @@ const ResultDialog = ({
                     <Box className="flex items-center gap-3">
                       <Typography variant="subtitle1" className="font-medium">
                         {/* --- PERBAIKAN: Tampilkan nama file untuk identifikasi yang lebih baik --- */}
-                        {result.filename || `STNK #${idx + 1}`}
+                        {`STNK #${idx + 1}`}
                       </Typography>
                       <Typography variant="body2" className="text-gray-600">
                         {correctedNumbers[idx] || result.nomor_rangka || "Nomor tidak terdeteksi"}
