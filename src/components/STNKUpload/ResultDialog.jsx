@@ -4,31 +4,26 @@ import {
   Grid, TextField, Typography
 } from "@mui/material";
 
+// --- PERBAIKAN: Tambahkan 'imageMap' dan 'handleImageZoom' ke props ---
 const ResultDialog = ({
   open,
   onClose,
   results,
+  imageMap, // <-- Prop baru dari parent
+  handleImageZoom, // <-- Prop yang sebelumnya hilang
   correctedNumbers,
   setCorrectedNumbers,
   correctedQuantities,
   setCorrectedQuantities,
-  correctedSamsatCodes,
-  setCorrectedSamsatCodes,
-  imagePreviews,
+  // 'imagePreviews' dan 'selectedImages' tidak lagi dibutuhkan di sini, tapi kita terima agar tidak error
   selectedImages,
   expandedPanels,
   handleAccordionChange,
   expandAll,
   collapseAll,
   getStatusChip,
-  handleImageZoom,
   handleSubmit,
   isSubmitting,
-  userRole,
-  selectedPTs,
-  ptList,
-  selectedBrands,
-  brandList,
 }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
@@ -52,94 +47,122 @@ const ResultDialog = ({
       <Divider />
       <DialogContent className="p-0">
         <Box className="max-h-[70vh] overflow-y-auto">
-          {results.map((result, idx) => (
-            <Accordion
-              key={idx}
-              expanded={expandedPanels.has(idx)}
-              onChange={handleAccordionChange(idx)}
-              className="border-b">
-              <AccordionSummary
-                expandIcon={<i className="bi bi-chevron-down"></i>}
-                className="bg-gray-50">
-                <Box className="flex items-center justify-between w-full mr-4">
-                  <Box className="flex items-center gap-3">
-                    <Typography variant="subtitle1" className="font-medium">
-                      STNK #{idx + 1}
-                    </Typography>
-                    <Typography variant="body2" className="text-gray-600">
-                      {correctedNumbers[idx] || result.nomor_rangka || "Nomor tidak terdeteksi"}
-                    </Typography>
-                    <Typography variant="body2" className="text-blue-600">
-                      Qty: {correctedQuantities[idx] || result.details?.jumlah || 0}
-                    </Typography>
+          {results.map((result, idx) => {
+            // --- PERBAIKAN: Cari gambar dan file yang benar berdasarkan 'filename' ---
+            const correctImagePreview = imageMap?.get(result.filename);
+            const originalFile = selectedImages.find(img => img.name === result.filename);
+
+            return (
+              <Accordion
+                // --- PERBAIKAN: Gunakan `filename` sebagai key yang stabil ---
+                key={result.filename || idx}
+                expanded={expandedPanels.has(idx)}
+                onChange={handleAccordionChange(idx)}
+                className="border-b">
+                <AccordionSummary
+                  expandIcon={<i className="bi bi-chevron-down"></i>}
+                  className="bg-gray-50">
+                  <Box className="flex items-center justify-between w-full mr-4">
+                    <Box className="flex items-center gap-3">
+                      <Typography variant="subtitle1" className="font-medium">
+                        {/* --- PERBAIKAN: Tampilkan nama file untuk identifikasi yang lebih baik --- */}
+                        {result.filename || `STNK #${idx + 1}`}
+                      </Typography>
+                      <Typography variant="body2" className="text-gray-600">
+                        {correctedNumbers[idx] || result.nomor_rangka || "Nomor tidak terdeteksi"}
+                      </Typography>
+                    </Box>
+                    <Box className="flex items-center gap-2">
+                      {getStatusChip(result, correctedNumbers[idx] || "", result.nomor_rangka || "")}
+                      <Chip
+                        label={
+                          // --- PERBAIKAN: Gunakan file asli yang ditemukan untuk ukuran yang benar ---
+                          originalFile
+                            ? `${(originalFile.size / 1024 / 1024).toFixed(1)}MB`
+                            : "0MB"
+                        }
+                        size="small"
+                        variant="outlined"
+                        className="text-xs"/>
+                    </Box>
                   </Box>
-                  <Box className="flex items-center gap-2">
-                    {getStatusChip(result, correctedNumbers[idx] || "", result.nomor_rangka || "")}
-                    <Chip
-                      label={
-                        selectedImages[idx]
-                          ? `${(selectedImages[idx].size / 1024 / 1024).toFixed(1)}MB`
-                          : "0MB"
-                      }
-                      size="small"
-                      variant="outlined"
-                      className="text-xs"/>
-                  </Box>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails className="p-4">
-                <Grid container spacing={3}>
-                  {/* Gambar */}
-                  <Grid item xs={12} md={4}>
-                    <Typography variant="subtitle2" className="mb-2 font-medium">
-                      Preview Gambar
-                    </Typography>
-                   <img
-                      src={imagePreviews[idx]}
-                      alt={`STNK Preview ${idx + 1}`}
-                      style={{ transform: 'rotate(-90deg)', width: '100%', display: 'block' }}/>
-                  </Grid>
-
-                  {/* Data STNK */}
-                  <Grid item xs={12} md={8}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Nomor Rangka *"
-                          variant="outlined"
-                          value={correctedNumbers[idx] || ""}
-                          onChange={(e) => {
-                            const updated = [...correctedNumbers];
-                            updated[idx] = e.target.value;
-                            setCorrectedNumbers(updated);
+                </AccordionSummary>
+                <AccordionDetails className="p-4">
+                  <Grid container spacing={3}>
+                    {/* Gambar */}
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="subtitle2" className="mb-2 font-medium">
+                        Preview Gambar
+                      </Typography>
+                      {/* --- PERBAIKAN: Tampilkan gambar yang benar dari 'correctImagePreview' --- */}
+                      {correctImagePreview ? (
+                        <img
+                          src={correctImagePreview}
+                          alt={`STNK Preview for ${result.filename}`}
+                          style={{
+                            width: '100%',
+                            maxHeight: '300px',
+                            objectFit: 'contain',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            cursor: 'pointer'
                           }}
-                          error={!correctedNumbers[idx]?.trim()}
-                          helperText={!correctedNumbers[idx]?.trim() ? "Nomor rangka wajib diisi" : ""}/>
-                      </Grid>
+                          // --- PERBAIKAN: Panggil handleImageZoom dengan data yang benar ---
+                          onClick={() => handleImageZoom(correctImagePreview, result.filename)}
+                        />
+                      ) : (
+                        <Box sx={{
+                          width: '100%', height: 200, bgcolor: '#f0f0f0',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          borderRadius: '8px', border: '1px solid #ddd'
+                        }}>
+                          <Typography variant="caption" color="textSecondary">
+                            Preview tidak tersedia
+                          </Typography>
+                        </Box>
+                      )}
+                    </Grid>
 
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Jumlah"
-                          variant="outlined"
-                          type="number"
-                          value={correctedQuantities[idx] || ""}
-                          onChange={(e) => {
-                            const updated = [...correctedQuantities];
-                            updated[idx] = e.target.value;
-                            setCorrectedQuantities(updated);
-                          }}
-                          inputProps={{ min: 0 }}/>
+                    {/* Data STNK */}
+                    <Grid item xs={12} md={8}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="Nomor Rangka *"
+                            variant="outlined"
+                            value={correctedNumbers[idx] || ""}
+                            onChange={(e) => {
+                              const updated = [...correctedNumbers];
+                              updated[idx] = e.target.value.toUpperCase(); // <-- Tambahan: konversi ke uppercase
+                              setCorrectedNumbers(updated);
+                            }}
+                            error={!correctedNumbers[idx]?.trim()}
+                            helperText={!correctedNumbers[idx]?.trim() ? "Nomor rangka wajib diisi" : ""}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="Jumlah"
+                            variant="outlined"
+                            type="number"
+                            value={correctedQuantities[idx] || "0"} // Default value
+                            onChange={(e) => {
+                              const updated = [...correctedQuantities];
+                              updated[idx] = e.target.value;
+                              setCorrectedQuantities(updated);
+                            }}
+                            inputProps={{ min: 0 }}
+                          />
+                        </Grid>
                       </Grid>
-
-                      {/* Bagian Kode Samsat, PT, Brand telah dihapus dari tampilan */}
                     </Grid>
                   </Grid>
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
-          ))}
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
         </Box>
       </DialogContent>
       <Divider />

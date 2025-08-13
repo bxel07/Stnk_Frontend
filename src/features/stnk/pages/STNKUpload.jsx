@@ -262,6 +262,12 @@ const STNKUpload = () => {
     }
   }, [resultDialog]);
   
+
+  const imageMap = new Map();
+  selectedImages.forEach((file, index) => {
+    imageMap.set(file.name, imagePreviews[index]);
+  });
+  
   return (
     <Box className="space-y-6">
       {/* Header Section */}
@@ -478,6 +484,7 @@ const STNKUpload = () => {
         correctedSamsatCodes={correctedSamsatCodes}
         setCorrectedSamsatCodes={setCorrectedSamsatCodes}
         imagePreviews={imagePreviews}
+        imageMap={imageMap} 
         selectedImages={selectedImages}
         expandedPanels={expandedPanels}
         handleAccordionChange={(index) => (e, expanded) => {
